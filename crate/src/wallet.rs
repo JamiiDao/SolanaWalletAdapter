@@ -1,13 +1,13 @@
 use std::borrow::Cow;
 
-use wasm_bindgen::JsValue;
+use wasm_bindgen::{JsCast, JsValue};
 use web_sys::js_sys::Reflect;
 
-use crate::{WalletError, WalletResult};
+use crate::{WalletAccount, WalletError, WalletResult};
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Wallet {
-    accounts: Vec<String>,
+    accounts: Vec<WalletAccount>,
     chains: Vec<String>,
     // features: Feature,
     icon: Option<WalletIcon>,
@@ -19,34 +19,46 @@ impl Wallet {
     pub fn from_jsvalue(value: JsValue) -> WalletResult<Self> {
         let reflection = Reflection::new(value);
 
-        let (name_key, wallet_name) = reflection.string("name")?;
-        assert_eq!(name_key.as_str(), "name");
+        let wallet_name = reflection.string("name")?;
 
-        let (wallet_key, wallet_version) = reflection.string("version")?;
-        assert_eq!(wallet_key.as_str(), "version");
+        let wallet_version = reflection.string("version")?;
 
-        let (icon_key, icon) = match reflection.string("icon") {
-            Ok((icon_key, icon)) => (icon_key, Option::Some(WalletIcon(Cow::Owned(icon)))),
-            Err(error) => {
-                if error == WalletError::JsValueNotString {
-                    (String::from("icon"), Option::None)
-                } else {
-                    return Err(error);
-                }
-            }
-        };
+        let icon = WalletIcon::from_jsvalue(&reflection)?;
 
-        assert_eq!(icon_key.as_str(), "icon");
+        let accounts = Self::get_accounts(&reflection, "accounts")?;
+
+        let chains = reflection.vec_string("chains")?;
 
         let mut wallet = Self::default();
         wallet.name = wallet_name;
         wallet.version = SemverVersion::parse(&wallet_version)?;
         wallet.icon = icon;
+        wallet.accounts = accounts;
+        wallet.chains = chains;
 
         Ok(wallet)
     }
 
-    pub fn accounts(&self) -> &[String] {
+    pub fn get_accounts(reflection: &Reflection, key: &str) -> WalletResult<Vec<WalletAccount>> {
+        let accounts_raw = Reflect::get(&reflection.0, &key.into())?;
+
+        Reflection::check_is_undefined(&accounts_raw)?;
+
+        if !accounts_raw.is_array() {
+            return Err(WalletError::ExpectedArray(
+                "Reflection for `accounts` key".to_string(),
+            ));
+        }
+
+        let accounts_array: js_sys::Array = accounts_raw.unchecked_into();
+
+        accounts_array
+            .iter()
+            .map(|account| WalletAccount::parse(&Reflection(account)))
+            .collect::<WalletResult<Vec<WalletAccount>>>()
+    }
+
+    pub fn accounts(&self) -> &[WalletAccount] {
         &self.accounts
     }
 
@@ -75,14 +87,50 @@ impl Reflection {
         Self(value)
     }
 
-    pub fn string(&self, key: &str) -> WalletResult<(String, String)> {
+    pub fn string(&self, key: &str) -> WalletResult<String> {
         let name = Reflect::get(&self.0, &key.into())?;
 
         Reflection::check_is_undefined(&name)?;
 
         let parsed = name.as_string().ok_or(WalletError::JsValueNotString)?;
 
-        Ok((key.to_string(), parsed))
+        Ok(parsed)
+    }
+
+    pub fn byte32array(&self, key: &str) -> WalletResult<[u8; 32]> {
+        let js_value = Reflect::get(&self.0, &key.into())?;
+
+        Reflection::check_is_undefined(&js_value)?;
+
+        if !js_value.is_array() {
+            return Err(WalletError::ExpectedArray(key.to_string()));
+        }
+
+        let to_js_array: js_sys::Uint8Array = js_value.unchecked_into();
+
+        let byte32array: [u8; 32] = to_js_array
+            .to_vec()
+            .try_into()
+            .or(Err(WalletError::Expected32ByteLength))?;
+
+        Ok(byte32array)
+    }
+
+    pub fn vec_string(&self, key: &str) -> WalletResult<Vec<String>> {
+        let js_value = Reflect::get(&self.0, &key.into())?;
+
+        Reflection::check_is_undefined(&js_value)?;
+
+        if !js_value.is_array() {
+            return Err(WalletError::ExpectedArray(key.to_string()));
+        }
+
+        let to_js_array: js_sys::Array = js_value.unchecked_into();
+
+        to_js_array
+            .iter()
+            .map(|value| value.as_string().ok_or(WalletError::JsValueNotString))
+            .collect::<WalletResult<Vec<String>>>()
     }
 
     pub fn check_is_undefined(value: &JsValue) -> WalletResult<()> {
@@ -100,6 +148,23 @@ pub struct WalletIcon(
     /// Format `data:image/${'svg+xml' | 'webp' | 'png' | 'gif'};base64,${string}`
     pub Cow<'static, str>,
 );
+
+impl WalletIcon {
+    pub fn from_jsvalue(reflection: &Reflection) -> WalletResult<Option<WalletIcon>> {
+        let icon = match reflection.string("icon") {
+            Ok(icon) => Option::Some(WalletIcon(Cow::Owned(icon))),
+            Err(error) => {
+                if error == WalletError::JsValueNotString {
+                    Option::None
+                } else {
+                    return Err(error);
+                }
+            }
+        };
+
+        Ok(icon)
+    }
+}
 
 impl core::fmt::Debug for WalletIcon {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

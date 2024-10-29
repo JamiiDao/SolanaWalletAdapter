@@ -47,6 +47,12 @@ pub enum WalletError {
     /// Unexpected SemVer number to parse to a `u8`
     #[error("Unexpected SemVer number `{0}` to parse to a `u8`")]
     InvalidSemVerNumber(String),
+    /// Expected an array JsValue.
+    #[error("Expected an array JsValue.")]
+    ExpectedArray(String),
+    /// The byte length should be equal to 32 bytes in length
+    #[error("The byte length should be equal to 32 bytes in length")]
+    Expected32ByteLength,
 }
 
 impl WalletError {

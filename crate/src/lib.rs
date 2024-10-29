@@ -25,3 +25,6 @@ pub use register::*;
 
 mod constants;
 pub use constants::*;
+
+mod wallet_account;
+pub use wallet_account::*;
