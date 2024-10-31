@@ -52,7 +52,7 @@ impl WalletAdapter {
     pub fn execute(self) {
         wasm_bindgen_futures::spawn_local(async move {
             while let Ok(message_type) = self.receiver.recv().await {
-                log::info!("WALLET_ADAPTER> : {:?}", &message_type);
+                log::info!("WALLET_ADAPTER> : {:#?}", &message_type);
             }
         });
     }

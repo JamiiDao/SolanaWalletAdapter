@@ -29,6 +29,9 @@ pub enum WalletError {
     /// A value of `undefined` or `null` was encountered
     #[error("A value of `undefined` or `null` was encountered")]
     ValueNotFound,
+    /// A value was expected but it dosen't exist in the `JsValue`
+    #[error("A value of `{0}` was expected but it dosen't exist in the `JsValue`")]
+    ExpectedValueNotFound(String),
     /// Unable to access browser window
     #[error("Unable to access browser window")]
     MissingAccessToBrowserWindow,
@@ -48,11 +51,33 @@ pub enum WalletError {
     #[error("Unexpected SemVer number `{0}` to parse to a `u8`")]
     InvalidSemVerNumber(String),
     /// Expected an array JsValue.
-    #[error("Expected an array JsValue.")]
+    #[error("Expected an array `{0}` JsValue.")]
     ExpectedArray(String),
+    /// Expected an `String` JsValue.
+    #[error("Expected an `{0}` String JsValue.")]
+    ExpectedString(String),
     /// The byte length should be equal to 32 bytes in length
     #[error("The byte length should be equal to 32 bytes in length")]
     Expected32ByteLength,
+    /// Expected the JsValue to be an Object
+    #[error("Expected the `{0}` JsValue to be an Object")]
+    ExpectedObject(String),
+    /// The version was not found
+    #[error("The version was not found")]
+    VersionNotFound,
+    /// This feature is not supported as a standard feature
+    #[error("The feature `{0}` is not supported as a standard feature")]
+    UnsupportedStandardFeature(String),
+    /// Encountered an unsupported transaction version.
+    /// Only `legacy` and `version zero` transactions are supported.
+    #[error("Encountered an unsupported transaction version. Only `legacy` and `version zero` transactions are supported.")]
+    UnsupportedTransactionVersion,
+    /// Legacy transaction versions need to be supported yet the encountered wallet does not do this.
+    #[error("Legacy transaction versions need to be supported yet the encountered wallet does not do this.")]
+    LegacyTransactionSupportRequired,
+    /// The blockchain encountered is not supported.
+    #[error("The blockchain `{0}` is not supported")]
+    UnsupportedChain(String),
 }
 
 impl WalletError {
