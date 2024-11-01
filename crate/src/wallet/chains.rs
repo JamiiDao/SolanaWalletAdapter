@@ -1,3 +1,5 @@
+use crate::WalletError;
+
 /// Solana Mainnet cluster,  https://api.mainnet-beta.solana.com
 pub const MAINNET_IDENTIFIER: &'static str = "solana:mainnet";
 /// Solana Devnet cluster, e.g. https://api.devnet.solana.com
@@ -16,6 +18,14 @@ pub const TESTNET_ENDPOINT: &'static str = "https://api.testnet.solana.com";
 /// Solana Localnet cluster
 pub const LOCALNET_ENDPOINT: &'static str = "http://localhost:8899";
 
+#[derive(Debug, Default, PartialEq, Eq, PartialOrd, Ord, Clone, Hash)]
+pub struct ChainSupport {
+    pub mainnet: bool,
+    pub devnet: bool,
+    pub testnet: bool,
+    pub localnet: bool,
+}
+
 /// Solana Clusters
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Hash)]
 pub enum Cluster {
@@ -27,7 +37,6 @@ pub enum Cluster {
     TestNet,
     /// Solana Localnet cluster, e.g. http://localhost:8899
     LocalNet,
-    Custom(String),
 }
 
 impl Cluster {
@@ -38,14 +47,15 @@ impl Cluster {
             Cluster::DevNet => DEVNET_ENDPOINT,
             Cluster::TestNet => TESTNET_ENDPOINT,
             Cluster::LocalNet => LOCALNET_ENDPOINT,
-            Cluster::Custom(uri) => uri.as_str(),
         }
     }
 }
 
-impl From<&str> for Cluster {
-    fn from(value: &str) -> Self {
-        match value {
+impl TryFrom<&str> for Cluster {
+    type Error = WalletError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        let cluster = match value {
             MAINNET_IDENTIFIER => Self::MainNet,
             DEVNET_IDENTIFIER => Self::DevNet,
             TESTNET_IDENTIFIER => Self::TestNet,
@@ -54,8 +64,10 @@ impl From<&str> for Cluster {
             DEVNET_ENDPOINT => Self::DevNet,
             TESTNET_ENDPOINT => Self::TestNet,
             LOCALNET_ENDPOINT => Self::LocalNet,
-            _ => Self::Custom(value.to_string()),
-        }
+            _ => return Err(WalletError::UnsupportedChain(value.to_string())),
+        };
+
+        Ok(cluster)
     }
 }
 
