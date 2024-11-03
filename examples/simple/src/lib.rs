@@ -1,5 +1,6 @@
+use async_channel::Sender;
 use log::Level;
-use wallet_adapter::WalletAdapter;
+use wallet_adapter::{MessageType, WalletAdapter};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -9,5 +10,11 @@ pub fn main(connect_ev_node: &str) {
 
     log::info!("TARGET NODE: {}", connect_ev_node);
 
-    WalletAdapter::init().unwrap().execute();
+    let adapter = WalletAdapter::init().unwrap();
+
+    adapter.execute(runner);
+}
+
+async fn runner(sender: Sender<MessageType>) {
+    sender.send(MessageType::Connect("Solflare")).await.unwrap()
 }

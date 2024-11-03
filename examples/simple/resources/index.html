@@ -33,8 +33,8 @@
     </script>
 
 
-    <!-- 
-    <script>
+
+    <!-- <script>
 
         // Event type constants
         const WINDOW_APP_READY_EVENT_TYPE = 'wallet-standard:app-ready';
@@ -44,6 +44,10 @@
         let foo = function (wallet) {
             // Example implementation of registering a wallet
             console.log('Wallet registered:', wallet);
+            console.log('Feature:', wallet.features["standard:connect"].connect(true).then((value) => {
+                console.log(value)
+            }));
+
             return () => {
                 console.log('Wallet unregistered:', wallet);
             };

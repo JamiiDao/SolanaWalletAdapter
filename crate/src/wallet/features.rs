@@ -1,7 +1,12 @@
+use std::hash::Hash;
+
+use js_sys::Function;
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::js_sys::Reflect;
 
-use crate::{Reflection, SemverVersion, WalletError, WalletResult};
+use crate::{
+    Reflection, SemverVersion, WalletAccount, WalletError, WalletResult, STANDARD_CONNECT,
+};
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct FeatureInfo {
@@ -18,7 +23,7 @@ pub struct FeatureInfoWithTx {
 #[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Features {
     /// standard:connect
-    connect: Option<FeatureInfo>,
+    connect: Connect,
     /// standard:disconnect
     disconnect: Option<FeatureInfo>,
     /// standard:events
@@ -43,10 +48,10 @@ impl Features {
         let mut features = Features::default();
 
         features_keys.into_iter().try_for_each(|feature| {
-            let version_object = features_object.reflect_inner(&feature)?;
+            let inner_object = features_object.reflect_inner(&feature)?;
 
             if feature.starts_with("standard:") || feature.starts_with("solana:") {
-                let version = SemverVersion::from_jsvalue(&version_object)?;
+                let version = SemverVersion::from_jsvalue(&inner_object)?;
 
                 let get_tx_version_support =
                     |value: &JsValue, version: SemverVersion| -> WalletResult<FeatureInfoWithTx> {
@@ -87,8 +92,8 @@ impl Features {
                         Ok(tx_info)
                     };
 
-                if feature == "standard:connect" {
-                    features.connect.replace(FeatureInfo { version });
+                if feature == STANDARD_CONNECT {
+                    features.connect = Connect::new(&inner_object, version)?;
                 } else if feature == "standard:disconnect" {
                     features.disconnect.replace(FeatureInfo { version });
                 } else if feature == "standard:events" {
@@ -96,11 +101,11 @@ impl Features {
                 } else if feature == "solana:signAndSendTransaction" {
                     features
                         .sign_and_send_tx
-                        .replace(get_tx_version_support(&version_object, version)?);
+                        .replace(get_tx_version_support(&inner_object, version)?);
                 } else if feature == "solana:signTransaction" {
                     features
                         .sign_tx
-                        .replace(get_tx_version_support(&version_object, version)?);
+                        .replace(get_tx_version_support(&inner_object, version)?);
                 } else if feature == "solana:signMessage" {
                     features.sign_message.replace(FeatureInfo { version });
                 } else if feature == "solana:signIn" {
@@ -118,8 +123,8 @@ impl Features {
         Ok(features)
     }
 
-    pub fn connect(&self) -> Option<&FeatureInfo> {
-        self.connect.as_ref()
+    pub async fn connect(&self) -> WalletResult<Vec<WalletAccount>> {
+        self.connect.call_connect().await
     }
 
     pub fn disconnect(&self) -> Option<&FeatureInfo> {
@@ -148,5 +153,69 @@ impl Features {
 
     pub fn extensions(&self) -> &[String] {
         &self.extensions
+    }
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Connect {
+    version: SemverVersion,
+    callback: Function,
+}
+impl Connect {
+    pub fn new(value: &JsValue, version: SemverVersion) -> WalletResult<Self> {
+        let get_connect_value =
+            Reflect::get(&value, &"connect".into()).or(Err(WalletError::MissingConnectFunction))?;
+        let get_connect_fn =
+            get_connect_value
+                .dyn_into::<Function>()
+                .or(Err(WalletError::JsValueNotFunction(
+                    "Namespace[`standard:connect -> connect`]".to_string(),
+                )))?;
+
+        Ok(Connect {
+            version,
+            callback: get_connect_fn,
+        })
+    }
+
+    async fn call_connect(&self) -> WalletResult<Vec<WalletAccount>> {
+        let outcome = self
+            .callback
+            .call1(&JsValue::null(), &JsValue::from_bool(false))?;
+
+        let outcome = js_sys::Promise::resolve(&outcome);
+
+        match wasm_bindgen_futures::JsFuture::from(outcome).await {
+            Ok(success) => {
+                let get_accounts = Reflection::new(success)?.get_js_array("accounts")?;
+
+                get_accounts
+                    .into_iter()
+                    .map(|raw_account| WalletAccount::parse(&Reflection::new(raw_account)?))
+                    .collect::<WalletResult<Vec<WalletAccount>>>()
+            }
+            Err(error) => {
+                let value: WalletError = error.into();
+                return Err(WalletError::WalletConnectError(value.to_string()));
+            }
+        }
+    }
+}
+
+impl PartialOrd for Connect {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.version.cmp(&other.version))
+    }
+}
+
+impl Ord for Connect {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.version.cmp(&other.version)
+    }
+}
+
+impl Hash for Connect {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.version.hash(state);
     }
 }

@@ -1,3 +1,5 @@
+use std::future::Future;
+
 use async_channel::{Receiver, Sender};
 use web_sys::{js_sys::Object, Document, Window};
 
@@ -49,11 +51,33 @@ impl WalletAdapter {
         Ok(new_self)
     }
 
-    pub fn execute(self) {
-        wasm_bindgen_futures::spawn_local(async move {
+    pub fn execute<F>(mut self, runner: impl FnOnce(Sender<MessageType>) -> F + 'static)
+    where
+        F: Future<Output = ()> + 'static,
+    {
+        let first_sender = self.sender.clone();
+
+        let listener = async move {
             while let Ok(message_type) = self.receiver.recv().await {
-                log::info!("WALLET_ADAPTER> : {:#?}", &message_type);
+                match message_type {
+                    MessageType::Success(wallet) => {
+                        // log::info!("WALLET_ADAPTER> [SUCCESS]: {:#?}", &wallet);
+                        self.wallets.push(wallet);
+                    }
+                    MessageType::Failure(error) => {
+                        log::info!("WALLET_ADAPTER> [ERROR]: {:#?}", &error);
+                    }
+                    MessageType::Connect(name) => {
+                        connect(first_sender.clone(), &self.wallets, name).await
+                    }
+                }
             }
+        };
+
+        wasm_bindgen_futures::spawn_local(async move {
+            let local_sender = self.sender.clone();
+
+            futures_lite::future::zip(listener, runner(local_sender)).await;
         });
     }
 
@@ -76,10 +100,33 @@ impl WalletAdapter {
     pub fn document(&self) -> &Document {
         &self.document
     }
+
+    pub fn wallets(&self) -> &[Wallet] {
+        self.wallets.as_slice()
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
 pub enum MessageType {
     Success(Wallet),
     Failure(WalletError),
+    Connect(&'static str),
+}
+
+async fn connect(sender: Sender<MessageType>, wallets: &[Wallet], name: &str) {
+    if let Some(solflare) = wallets.iter().find(|wallet| wallet.name() == name) {
+        match solflare.features().connect().await {
+            Ok(connection) => {
+                log::info!("CONNECT OUTCOME: {:?}", connection);
+            }
+
+            Err(error) => {
+                if let Some(error) = sender.send(MessageType::Failure(error)).await.err() {
+                    log::error!("Unable to send error message. Maybe `Receiver` already closed the channel. Sender Error `{:?}`", error);
+                }
+            }
+        }
+    } else {
+        panic!("{name} Not Found")
+    }
 }

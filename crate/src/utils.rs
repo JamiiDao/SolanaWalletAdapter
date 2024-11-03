@@ -1,4 +1,4 @@
-use js_sys::{Object, Reflect};
+use js_sys::{Array, Object, Reflect};
 use wasm_bindgen::{JsCast, JsValue};
 
 use crate::{WalletError, WalletResult};
@@ -62,10 +62,6 @@ impl Reflection {
     pub fn byte32array(&self, key: &str) -> WalletResult<[u8; 32]> {
         let js_value = Reflect::get(&self.0, &key.into())?;
 
-        if !js_value.is_array() {
-            return Err(WalletError::ExpectedArray(key.to_string()));
-        }
-
         let to_js_array: js_sys::Uint8Array = js_value.unchecked_into();
 
         let byte32array: [u8; 32] = to_js_array
@@ -77,18 +73,22 @@ impl Reflection {
     }
 
     pub fn vec_string(&self, key: &str) -> WalletResult<Vec<String>> {
+        let to_js_array = self.get_js_array(key)?;
+
+        to_js_array
+            .iter()
+            .map(|value| value.as_string().ok_or(WalletError::JsValueNotString))
+            .collect::<WalletResult<Vec<String>>>()
+    }
+
+    pub fn get_js_array(&self, key: &str) -> WalletResult<Array> {
         let js_value = Reflect::get(&self.0, &key.into())?;
 
         if !js_value.is_array() {
             return Err(WalletError::ExpectedArray(key.to_string()));
         }
 
-        let to_js_array: js_sys::Array = js_value.unchecked_into();
-
-        to_js_array
-            .iter()
-            .map(|value| value.as_string().ok_or(WalletError::JsValueNotString))
-            .collect::<WalletResult<Vec<String>>>()
+        Ok(js_value.unchecked_into())
     }
 
     pub fn vec_string_and_filter(&self, key: &str, filter: &str) -> WalletResult<Vec<String>> {

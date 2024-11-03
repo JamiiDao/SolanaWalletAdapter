@@ -1,4 +1,4 @@
-use crate::{Reflection, WalletIcon, WalletResult};
+use crate::{Reflection, WalletError, WalletIcon, WalletResult};
 
 /// Interface of a **WalletAccount**, also referred to as an **Account**.
 /// An account is a _read-only data object_ that is provided from the Wallet to the app,
@@ -18,7 +18,7 @@ pub struct WalletAccount {
     /// This must be a subset of the names of {@link Wallet.features | features} of the Wallet.
     pub features: Vec<String>,
     /// Optional user-friendly descriptive label or name for the account. This may be displayed by the app.
-    pub label: String,
+    pub label: Option<String>,
     /// Optional user-friendly icon for the account. This may be displayed by the app. */
     pub icon: Option<WalletIcon>,
 }
@@ -26,11 +26,21 @@ pub struct WalletAccount {
 impl WalletAccount {
     pub fn parse(reflection: &Reflection) -> WalletResult<Self> {
         let address = reflection.string("address")?;
-        let public_key = reflection.byte32array("public_key")?;
+        let public_key = reflection.byte32array("publicKey")?;
         let chains = reflection.vec_string("chains")?;
         let features = reflection.vec_string("features")?;
-        let label = reflection.string("label")?;
         let icon = WalletIcon::from_jsvalue(reflection)?;
+
+        let label = match reflection.string("label") {
+            Ok(value) => Some(value),
+            Err(error) => {
+                if error == WalletError::JsValueNotString {
+                    Option::None
+                } else {
+                    return Err(error);
+                }
+            }
+        };
 
         Ok(Self {
             address,

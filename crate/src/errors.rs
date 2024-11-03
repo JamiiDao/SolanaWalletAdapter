@@ -78,6 +78,15 @@ pub enum WalletError {
     /// The blockchain encountered is not supported.
     #[error("The blockchain `{0}` is not supported")]
     UnsupportedChain(String),
+    /// The `connect` function of the `standard:connect` namespace was not found while parsing a wallet
+    #[error("The `connect` function of the `standard:connect` namespace was not found while parsing a wallet")]
+    MissingConnectFunction,
+    /// Expected JsValue of a `js_sys::Function`
+    #[error("Expected `{0}` to be a `JsValue` of type `js_sys::Function`")]
+    JsValueNotFunction(String),
+    /// Unable to connect to a wallet. The user may have rejected the request
+    #[error("Unable to connect to a wallet. Error `{0}` request")]
+    WalletConnectError(String),
 }
 
 impl WalletError {

@@ -18,3 +18,4 @@ thiserror = "1.0.63"
 async-channel.workspace = true
 jzon.workspace = true
 wasm-bindgen-futures.workspace = true
+futures-lite = "2.4.0"
