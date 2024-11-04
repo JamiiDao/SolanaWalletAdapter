@@ -16,7 +16,7 @@ pub struct Wallet {
     accounts: Vec<WalletAccount>,
     chains: Vec<Cluster>,
     features: Features,
-    // Convinience instead of iteration through the `chains` field
+    // Convinience field, instead of iteration through the `chains` field
     supported_chains: ChainSupport,
 }
 

@@ -22,16 +22,14 @@ impl Connect {
                     "Namespace[`standard:connect -> connect`]".to_string(),
                 )))?;
 
-        Ok(Connect {
+        Ok(Self {
             version,
             callback: get_connect_fn,
         })
     }
 
     pub(crate) async fn call_connect(&self) -> WalletResult<Vec<WalletAccount>> {
-        let outcome = self
-            .callback
-            .call1(&JsValue::null(), &JsValue::from_bool(false))?;
+        let outcome = self.callback.call0(&JsValue::from_bool(false))?;
 
         let outcome = js_sys::Promise::resolve(&outcome);
 

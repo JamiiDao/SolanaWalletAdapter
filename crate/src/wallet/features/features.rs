@@ -5,7 +5,7 @@ use crate::{
     Reflection, SemverVersion, WalletAccount, WalletError, WalletResult, STANDARD_CONNECT,
 };
 
-use super::Connect;
+use super::{Connect, Disconnect};
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct FeatureInfo {
@@ -24,7 +24,7 @@ pub struct Features {
     /// standard:connect
     connect: Connect,
     /// standard:disconnect
-    disconnect: Option<FeatureInfo>,
+    disconnect: Disconnect,
     /// standard:events
     events: Option<FeatureInfo>,
     /// solana:signAndSendTransaction
@@ -94,7 +94,7 @@ impl Features {
                 if feature == STANDARD_CONNECT {
                     features.connect = Connect::new(inner_object, version)?;
                 } else if feature == "standard:disconnect" {
-                    features.disconnect.replace(FeatureInfo { version });
+                    features.disconnect = Disconnect::new(inner_object, version)?;
                 } else if feature == "standard:events" {
                     features.events.replace(FeatureInfo { version });
                 } else if feature == "solana:signAndSendTransaction" {
@@ -126,8 +126,8 @@ impl Features {
         self.connect.call_connect().await
     }
 
-    pub fn disconnect(&self) -> Option<&FeatureInfo> {
-        self.disconnect.as_ref()
+    pub async fn disconnect(&self) -> WalletResult<()> {
+        self.disconnect.call_diconnect().await
     }
 
     pub fn events(&self) -> Option<&FeatureInfo> {

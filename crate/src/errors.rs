@@ -87,6 +87,12 @@ pub enum WalletError {
     /// Unable to connect to a wallet. The user may have rejected the request
     #[error("Unable to connect to a wallet. Error `{0}` request")]
     WalletConnectError(String),
+    /// The wallet `standard:disconnect` feature is missing
+    #[error("The wallet `standard:disconnect` feature is missing")]
+    MissingDisconnectFunction,
+    /// Unable to disconnect wallet.
+    #[error("Wallet Disconnect error - `{0}`")]
+    WalletDisonnectError(String),
 }
 
 impl WalletError {

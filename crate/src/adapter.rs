@@ -118,6 +118,11 @@ async fn connect(sender: Sender<MessageType>, wallets: &[Wallet], name: &str) {
         match solflare.features().connect().await {
             Ok(connection) => {
                 log::info!("CONNECT OUTCOME: {:?}", connection);
+
+                match solflare.features().disconnect().await {
+                    Ok(_) => log::info!("DISCONNECTED SUCCESSFULLY"),
+                    Err(error) => log::info!("WALLET DISCONNECT ERROR: {:?}", error),
+                }
             }
 
             Err(error) => {
