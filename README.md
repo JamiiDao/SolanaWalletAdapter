@@ -28,7 +28,7 @@ A lightweight Rust Solana Wallet that can be used in Rust based frontends and We
 - [ ] WebAssembly (No Frontend Framework) 
 - [ ] Sycamore
 - [ ] Yew
-- [ ] Dioxus
+- [x] Dioxus
 
 #### Building
 1. Install `cargo-make` and `miniserve`
