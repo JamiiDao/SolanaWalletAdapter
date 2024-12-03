@@ -14,10 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: EmbarkStudios/cargo-deny-action@v1
+      - uses: EmbarkStudios/cargo-deny-action@v2
         with:
-          command: --exclude-unpublished
-          arguments: check --exclude-dev --hide-inclusion-graph
+          arguments: --exclude-unpublished --exclude-dev
 
   typo-check:
     name: Spell Check with Typos
@@ -61,10 +60,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run cargo clippy and error on warnings
-        run: cargo clippy -- -D warnings    
+        run: cargo clippy -p wallet-adapter -- -D warnings
 
   build-no-docker:
-    name: Build (no Docker)
+    name: Build
     strategy:
       matrix:
         include:
