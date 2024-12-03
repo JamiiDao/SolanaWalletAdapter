@@ -151,7 +151,7 @@ impl Reflection {
             return Err(WalletError::JsValueNotObject);
         }
 
-        let target = self.0.dyn_ref::<Object>().unwrap(); // check above ensure it is an object hence unwrapping shpuld never fail
+        let target = self.0.dyn_ref::<Object>().unwrap(); // check above ensure it is an object hence unwrapping should never fail
 
         Reflect::set(target, key, value)?;
 
