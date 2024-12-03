@@ -6,9 +6,7 @@ use serde::Deserialize;
 use solana_sdk::{
     native_token::LAMPORTS_PER_SOL, pubkey::Pubkey, system_instruction, transaction::Transaction,
 };
-use wallet_adapter::{
-    Cluster, SendOptions, Utils, WalletAdapter,
-};
+use wallet_adapter::{Cluster, SendOptions, Utils, WalletAdapter};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{wasm_bindgen::JsCast, Headers, Request, RequestInit, Response};
 
@@ -38,7 +36,7 @@ pub fn SignAndSendTx(adapter: Signal<WalletAdapter>) -> Element {
                                 let signature = adapter.read().sign_and_send_transaction(&tx_bytes, Cluster::DevNet, SendOptions::default()).await;
                                 info!("RAW: {:?}", &signature);
                                 let signature = signature.unwrap();
-                                let output = String::from("https://explorer.solana.com/tx/") + &Utils::base58_signature(signature).as_str() + "?cluster=devnet";
+                                let output = String::from("https://explorer.solana.com/tx/") + Utils::base58_signature(signature).as_str() + "?cluster=devnet";
                                 *signed_tx_output.write()=output;
                             });
                         },
@@ -85,7 +83,7 @@ async fn get_blockhash() -> solana_sdk::hash::Hash {
     opts.set_headers(&headers);
     opts.set_body(&body.to_string().as_str().into());
 
-    let request = Request::new_with_str_and_init(&devnet_uri, &opts).unwrap();
+    let request = Request::new_with_str_and_init(devnet_uri, &opts).unwrap();
 
     let window = web_sys::window().unwrap();
     let fetch_promise = window.fetch_with_request(&request);

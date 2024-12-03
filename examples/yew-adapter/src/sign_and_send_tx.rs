@@ -46,7 +46,7 @@ pub fn SignAndSendTxComponent(controller: &AdapterActions) -> Html {
                                     let tx_bytes = bincode::serialize(&tx).unwrap();
                                     let signature = connected_wallet.sign_and_send_transaction(&tx_bytes, Cluster::DevNet, SendOptions::default(), &connected_account).await;
                                     let signature = signature.unwrap();
-                                    let output = String::from("https://explorer.solana.com/tx/") + &Utils::base58_signature(signature).as_str() + "?cluster=devnet";
+                                    let output = String::from("https://explorer.solana.com/tx/") + Utils::base58_signature(signature).as_str() + "?cluster=devnet";
                                     signed_tx_output.set(output);
                                 });
                             })
@@ -91,7 +91,7 @@ async fn get_blockhash() -> solana_sdk::hash::Hash {
     opts.set_headers(&headers);
     opts.set_body(&body.to_string().as_str().into());
 
-    let request = Request::new_with_str_and_init(&devnet_uri, &opts).unwrap();
+    let request = Request::new_with_str_and_init(devnet_uri, &opts).unwrap();
 
     let window = web_sys::window().unwrap();
     let fetch_promise = window.fetch_with_request(&request);

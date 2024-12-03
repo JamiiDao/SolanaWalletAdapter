@@ -8,7 +8,7 @@ use crate::AdapterActions;
 
 #[function_component]
 pub fn SignTxComponent(controller: &AdapterActions) -> Html {
-    let signed_tx_output: UseStateHandle<Option<Transaction>> = use_state(|| Option::default());
+    let signed_tx_output: UseStateHandle<Option<Transaction>> = use_state(Option::default);
     let public_key = controller.connected_account.public_key;
     let pubkey = Pubkey::new_from_array(public_key);
     let recipient_pubkey = Pubkey::new_from_array(Utils::public_key_rand());

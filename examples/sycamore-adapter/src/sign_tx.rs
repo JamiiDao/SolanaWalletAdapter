@@ -1,11 +1,8 @@
 use solana_sdk::{
-    native_token::LAMPORTS_PER_SOL, pubkey::Pubkey, system_instruction,
-    transaction::Transaction,
+    native_token::LAMPORTS_PER_SOL, pubkey::Pubkey, system_instruction, transaction::Transaction,
 };
 use sycamore::prelude::*;
-use wallet_adapter::{
-    Cluster, Utils,
-};
+use wallet_adapter::{Cluster, Utils};
 
 use crate::Controller;
 
@@ -22,7 +19,6 @@ pub fn SignTx(controller: Controller) -> View {
 
     view! {
         (if signed_tx_output.get_clone().is_none() {
-            let recipient_pubkey = recipient_pubkey.clone();
             let from = from.clone();
             view!{
                 div(class="inner-section"){
@@ -50,7 +46,6 @@ pub fn SignTx(controller: Controller) -> View {
                 }
             }
         }else {
-            let recipient_pubkey = recipient_pubkey.clone();
             let from = from.clone();
 
             view!{div(class="inner-section"){

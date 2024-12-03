@@ -81,7 +81,7 @@ pub fn ShowModal(mut adapter: Signal<WalletAdapter>, mut show_modal: Signal<bool
 
                         let attribute_value = target_as_element.get_attribute("data-wallet-name").unwrap();
                             let target_wallet = adapter.read().get_wallet(attribute_value.as_str()).unwrap();
-                            adapter.write().connect(&target_wallet.name()).await.unwrap();
+                            adapter.write().connect(target_wallet.name()).await.unwrap();
                             show_modal.set(false);
 
                         });

@@ -1,11 +1,8 @@
-
 use dioxus::prelude::*;
 use solana_sdk::{
     native_token::LAMPORTS_PER_SOL, pubkey::Pubkey, system_instruction, transaction::Transaction,
 };
-use wallet_adapter::{
-    Cluster, Utils, WalletAdapter,
-};
+use wallet_adapter::{Cluster, Utils, WalletAdapter};
 
 pub fn SignTx(adapter: Signal<WalletAdapter>) -> Element {
     let mut signed_tx_output: Signal<Option<Transaction>> = use_signal(|| Option::default());

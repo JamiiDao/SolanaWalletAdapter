@@ -1,8 +1,5 @@
-
 use dioxus::prelude::*;
-use wallet_adapter::{
-    SignInOutput, SigninInput, WalletAdapter,
-};
+use wallet_adapter::{SignInOutput, SigninInput, WalletAdapter};
 
 pub fn SignIn(adapter: Signal<WalletAdapter>) -> Element {
     let mut signin_output: Signal<Option<SignInOutput>> = use_signal(|| Option::None);
@@ -20,7 +17,7 @@ pub fn SignIn(adapter: Signal<WalletAdapter>) -> Element {
                         onclick: move |_| {
                         let mut signin_input = SigninInput::new();
                         signin_input
-                            .set_domain(&adapter.read().window())
+                            .set_domain(adapter.read().window())
                             .unwrap()
                             .set_statement(message)
                             .set_chain_id(wallet_adapter::Cluster::DevNet)

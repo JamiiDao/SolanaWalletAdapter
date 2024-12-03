@@ -5,9 +5,7 @@ use solana_sdk::{
     native_token::LAMPORTS_PER_SOL, pubkey::Pubkey, system_instruction, transaction::Transaction,
 };
 use sycamore::prelude::*;
-use wallet_adapter::{
-    Cluster, SendOptions, Utils,
-};
+use wallet_adapter::{Cluster, SendOptions, Utils};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Headers, Request, RequestInit, Response};
@@ -37,8 +35,6 @@ pub fn SignAndSendTx(controller: Controller) -> View {
                 button (id="btn-primary",
                     on:click={
                         move |_| {
-                            let connected_wallet = connected_wallet.clone();
-
                             wasm_bindgen_futures::spawn_local(async move {
                                 let instr = system_instruction::transfer(&pubkey, &recipient_pubkey, sol);
                                 let mut tx = Transaction::new_with_payer(&[instr], Some(&pubkey));
@@ -46,7 +42,7 @@ pub fn SignAndSendTx(controller: Controller) -> View {
                                 tx.message.recent_blockhash = blockhash;
                                 let tx_bytes = bincode::serialize(&tx).unwrap();
                                 let signature = connected_wallet.get_clone().sign_and_send_transaction(&tx_bytes, Cluster::DevNet, SendOptions::default(), &account.get_clone()).await.unwrap();
-                                let output = String::from("https://explorer.solana.com/tx/") + &Utils::base58_signature(signature).as_str() + "?cluster=devnet";
+                                let output = String::from("https://explorer.solana.com/tx/") + Utils::base58_signature(signature).as_str() + "?cluster=devnet";
                                 signed_tx_output.set(output);
                             });
                         }
@@ -91,7 +87,7 @@ async fn get_blockhash() -> solana_sdk::hash::Hash {
     opts.set_headers(&headers);
     opts.set_body(&body.to_string().as_str().into());
 
-    let request = Request::new_with_str_and_init(&devnet_uri, &opts).unwrap();
+    let request = Request::new_with_str_and_init(devnet_uri, &opts).unwrap();
 
     let window = web_sys::window().unwrap();
     let fetch_promise = window.fetch_with_request(&request);
