@@ -45,7 +45,7 @@ jobs:
       - name: Run cargo clippy and error on warnings
         run: cargo clippy -p wallet-adapter -- -D warnings
 
-  build-no-docker:
+  build:
     name: Build
     strategy:
       matrix:
@@ -80,8 +80,8 @@ jobs:
       - name: Build
         run: cargo build --all-features --target wasm32-unknown-unknown
 
-  test-no-docker:
-    name: Build (no Docker)
+  test:
+    name: Test
     strategy:
       matrix:
         include:
