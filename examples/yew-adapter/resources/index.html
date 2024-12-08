@@ -6,20 +6,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TITLE</title>
     <link rel="stylesheet" href="styles/normalize.css">
+    <link rel="stylesheet" href="styles/solana.css">
     <link rel="stylesheet" href="styles/main.css">
+
+
+
 </head>
 
 <body>
-    <section id="app"></section>
-    <h2 id="connected-wallets">No Wallets Detected</h2>
-    <ul id="modal">
-    </ul>
-    <button id="connect">Connect Wallet</button>
     <script type="module">
         import init, { main } from "./pkg/wasm.js"
-
         window.addEventListener('load', async () => {
             await init();
+            await main();
         });
 
     </script>

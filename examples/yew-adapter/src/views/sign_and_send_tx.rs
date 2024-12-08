@@ -10,18 +10,19 @@ use wasm_bindgen_futures::JsFuture;
 use web_sys::{Headers, Request, RequestInit, Response};
 use yew::prelude::*;
 
-use crate::AdapterActions;
+use super::ConnectedAccounts;
 
 #[function_component]
-pub fn SignAndSendTxComponent(controller: &AdapterActions) -> Html {
-    let signed_tx_output: UseStateHandle<String> = use_state(|| String::default());
-    let public_key = controller.connected_account.public_key;
+pub fn SignAndSendTxComponent(connection: &ConnectedAccounts) -> Html {
+    let connected_account = connection.account.clone();
+    let connected_wallet = connection.wallet.clone();
+
+    let public_key = connected_account.public_key;
     let pubkey = Pubkey::new_from_array(public_key);
     let recipient_pubkey = Pubkey::new_from_array(Utils::public_key_rand());
     let sol = LAMPORTS_PER_SOL;
 
-    let connected_wallet = controller.connected_wallet.clone();
-    let connected_account = controller.connected_account.clone();
+    let signed_tx_output: UseStateHandle<String> = use_state(String::default);
     let output = (*signed_tx_output.clone()).clone();
 
     html! {
@@ -31,7 +32,7 @@ pub fn SignAndSendTxComponent(controller: &AdapterActions) -> Html {
                     <div class="inner-body"> {"FROM: "} {connected_account.address.as_str()}</div>
                     <div class="inner-body"> {"TO: "} {recipient_pubkey}</div>
                     <div class="inner-body"> {"LAMPORTS: "} {sol}</div>
-                    <button id="btn-primary"
+                    <button class="btn-inner"
                         onclick={
                             Callback::from(move |_| {
                                 let connected_wallet= connected_wallet.clone();

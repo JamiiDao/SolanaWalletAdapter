@@ -37,7 +37,7 @@ pub fn Header() -> Element {
     };
 
     rsx! {
-        div{class:"navbar bg-base-300 text-neutral-content flex-col md:flex-row space-y-2 md:space-y-0",
+        div{class:"navbar flex-col md:flex-row space-y-2 md:space-y-0",
             div{class:"flex-1",
                 a{ class:"btn btn-ghost normal-case text-xl", href:"/",
                     img{ class:"h-4 md:h-6", alt:"Logo", src:crate::LOGO }

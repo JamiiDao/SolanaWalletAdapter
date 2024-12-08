@@ -1,6 +1,6 @@
 [package]
 name = "dioxus-adapter"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["448 OG <superuser@448.africa>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"

@@ -1,16 +1,19 @@
 use wallet_adapter::SignedMessageOutput;
 use yew::prelude::*;
 
-use crate::AdapterActions;
+use super::ConnectedAccounts;
 
 #[function_component]
-pub fn SignMessageComponent(controller: &AdapterActions) -> Html {
+pub fn SignMessageComponent(connection: &ConnectedAccounts) -> Html {
+    let connected_account = connection.account.clone();
+    let connected_wallet = connection.wallet.clone();
+
     let signed_message_output: UseStateHandle<Option<SignedMessageOutput>> =
         use_state(|| Option::None);
     let message = "Using Dioxus Framework";
-    let sign_message_supported = controller.connected_wallet.solana_sign_message();
-    let connected_wallet = controller.connected_wallet.clone();
-    let connected_account = controller.connected_account.clone();
+    let sign_message_supported = connected_wallet.solana_sign_message();
+    let connected_wallet = connected_wallet.clone();
+    let connected_account = connected_account.clone();
 
     html! {
         if signed_message_output.is_none() {
@@ -19,7 +22,7 @@ pub fn SignMessageComponent(controller: &AdapterActions) -> Html {
                     <div class="inner-body"> {"MESSAGE: "} {message} </div>
 
                     if sign_message_supported {
-                        <button id="btn-primary"
+                        <button class="btn-inner"
                             onclick={
                                 Callback::from(move |_| {
                                     let connected_wallet = connected_wallet.clone();
@@ -35,7 +38,7 @@ pub fn SignMessageComponent(controller: &AdapterActions) -> Html {
                         > {"SIGN MESSAGE"}
                         </button>
                     }else {
-                        <button id="btn-primary-disabled"> {"SIGN MESSAGE UNSUPPORTED"}</button>
+                        <button class="btn-inner-disabled"> {"SIGN MESSAGE UNSUPPORTED"}</button>
                     }
                 </div>
         }else {

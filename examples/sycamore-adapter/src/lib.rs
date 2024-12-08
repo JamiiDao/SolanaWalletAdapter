@@ -36,7 +36,7 @@ fn App() -> View {
     provide_context(create_signal(adapter));
 
     view! {
-        div(id="main") {
+        div(id="root") {
             Router(
                 integration=HistoryIntegration::new(),
                 view=|route: ReadSignal<AppRoutes>| {

@@ -4,18 +4,21 @@ use solana_sdk::{
 use wallet_adapter::{Cluster, Utils};
 use yew::prelude::*;
 
-use crate::AdapterActions;
+use super::ConnectedAccounts;
 
 #[function_component]
-pub fn SignTxComponent(controller: &AdapterActions) -> Html {
+pub fn SignTxComponent(connection: &ConnectedAccounts) -> Html {
+    let connected_account = connection.account.clone();
+    let connected_wallet = connection.wallet.clone();
+
     let signed_tx_output: UseStateHandle<Option<Transaction>> = use_state(Option::default);
-    let public_key = controller.connected_account.public_key;
+    let public_key = connected_account.public_key;
     let pubkey = Pubkey::new_from_array(public_key);
     let recipient_pubkey = Pubkey::new_from_array(Utils::public_key_rand());
     let sol = LAMPORTS_PER_SOL;
 
-    let connected_wallet = controller.connected_wallet.clone();
-    let connected_account = controller.connected_account.clone();
+    let connected_wallet = connected_wallet.clone();
+    let connected_account = connected_account.clone();
 
     html! {
         if signed_tx_output.is_none() {
@@ -24,7 +27,7 @@ pub fn SignTxComponent(controller: &AdapterActions) -> Html {
                     <div class="inner-body"> {"FROM: "} {connected_account.address.as_str()}</div>
                     <div class="inner-body"> {"TO: "} {recipient_pubkey}</div>
                     <div class="inner-body"> {"LAMPORTS: "} {sol}</div>
-                    <button id="btn-primary"
+                    <button class="btn-inner"
                         onclick={Callback::from(move |_| {
                             let connected_wallet= connected_wallet.clone();
                             let connected_account= connected_account.clone();

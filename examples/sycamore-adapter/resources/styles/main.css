@@ -6,6 +6,16 @@
     ;
 }
 
+body {
+    background: #1b1b1b;
+    color: #fafafa;
+}
+
+#root {
+    background: #1b1b1b;
+    min-height: 100%;
+}
+
 .min-height40vh {
     min-height: 40vh;
 }

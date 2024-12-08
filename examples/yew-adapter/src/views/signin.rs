@@ -1,15 +1,18 @@
 use wallet_adapter::{SignInOutput, SigninInput};
 use yew::prelude::*;
 
-use crate::AdapterActions;
+use super::ConnectedAccounts;
 
 #[function_component]
-pub fn SignInComponent(controller: &AdapterActions) -> Html {
+pub fn SignInComponent(connection: &ConnectedAccounts) -> Html {
+    let connected_account = connection.account.clone();
+    let connected_wallet = connection.wallet.clone();
+
     let signin_output: UseStateHandle<Option<SignInOutput>> = use_state(|| Option::None);
-    let message = "DIOXUS LOGIN";
-    let signin_supported = controller.connected_wallet.solana_signin();
-    let connected_wallet = controller.connected_wallet.clone();
-    let connected_account = controller.connected_account.clone();
+    let message = "YEW LOGIN";
+    let signin_supported = connected_wallet.solana_signin();
+    let connected_wallet = connected_wallet.clone();
+    let connected_account = connected_account.clone();
     let address = connected_account.address.clone();
 
     html! {
@@ -19,7 +22,7 @@ pub fn SignInComponent(controller: &AdapterActions) -> Html {
                 <div class={classes!("inner-body")}> {"ADDRESS:" } {address}</div>
                 <div class={classes!("inner-body")}> {"MESSAGE: "} {message}</div>
                 if signin_supported {
-                    <button class={"btn-primary"}
+                    <button class={"btn-inner"}
                         onclick={
                             Callback::from(move |_| {
                                 let signin_output = signin_output.clone() ;
@@ -48,7 +51,7 @@ pub fn SignInComponent(controller: &AdapterActions) -> Html {
                             })
                         }> {"SIGN IN"}</button>
                 }else {
-                    <button class="btn-primary-disabled">{"SIWS Unsupported"}</button>
+                    <button class="btn-inner-disabled">{"SIWS Unsupported"}</button>
                 }
             </div>
         }else {

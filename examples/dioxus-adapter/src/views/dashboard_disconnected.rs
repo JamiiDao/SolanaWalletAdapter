@@ -14,6 +14,8 @@ pub fn WalletDashboard() -> Element {
                     {SignTx()}
                     {SignAndSendTx()}
                 }
+            }else {
+                div{class:"min-height40vh centered", "CONNECT A WALLET FIRST"}
             }
             div {style:"position: fixed; z-index: 9999; inset: 16px; pointer-events: none;"}
         }
