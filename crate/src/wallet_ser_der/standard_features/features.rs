@@ -67,9 +67,7 @@ impl Features {
                     features.sign_message = SignMessage::new(inner_object, version)?;
                     supported_features.sign_message = true;
                 } else if feature == SOLANA_SIGN_IN_IDENTIFIER {
-                    features
-                        .sign_in
-                        .replace(SignIn::new(inner_object, version)?);
+                    SignIn::new(inner_object, version).map(|value| features.sign_in.replace(value));
                     supported_features.sign_in = true;
                 } else {
                     return Err(WalletError::UnsupportedWalletFeature(feature));

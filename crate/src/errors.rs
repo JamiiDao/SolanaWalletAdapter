@@ -1,12 +1,20 @@
 use js_sys::{wasm_bindgen::JsValue, Reflect};
 use thiserror::Error;
 
+use crate::Reflection;
+
 /// A Result<T, WalletError>
 pub type WalletResult<T> = Result<T, WalletError>;
 
 /// Error handling enum
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Hash, Error)]
 pub enum WalletError {
+    /// The length of the slice should be 32 bytes
+    #[error("The length of the slice should be 32 bytes.")]
+    SliceTo32ByteArray,
+    /// The length of the slice should be 64 bytes
+    #[error("The length of the slice should be 64 bytes.")]
+    SliceTo64ByteArray,
     /// An JavaScript Error corresponding to a [wasm_bindgen::JsValue] .
     /// It contains the error type represented by `name`,
     /// the error message `message`
@@ -21,21 +29,9 @@ pub enum WalletError {
         /// The stack from the JavaScript error message
         stack: String,
     },
-    /// Unable to parse an `Err(JsValue)` to get the `name`, `message` or `stack`. One, some or all of these values might be missing
-    #[error("Unable to parse an `Err(JsValue)` to get the `name`, `message` or `stack`. One, some or all of these values might be missing")]
-    UnableToParseJsError,
-    /// Attempted to convert a JsValue to a String where a String was expected
-    #[error(" Attempted to convert a JsValue to a String where a String was expected")]
-    JsValueNotString,
-    /// JsValue is not an object
-    #[error("JsValue is not an object")]
-    JsValueNotObject,
-    /// Attempted to convert a JsError to a String
-    #[error("Attempted to convert a JsError to a String")]
-    JsErrorNotString,
     /// A value of `undefined` or `null` was encountered
     #[error("A value of `undefined` or `null` was encountered")]
-    ValueNotFound,
+    JsValueNotFound,
     /// A value was expected but it doesn't exist in the `JsValue`
     #[error("A value of `{0}` was expected but it dosent't exist in the `JsValue`")]
     ExpectedValueNotFound(String),
@@ -48,30 +44,12 @@ pub enum WalletError {
     /// Only `processed`, `confirmed` and `finalized` commitments are supported by Solana clusters
     #[error("Unsupported Commitment level `{0}`. Only `processed`, `confirmed` and `finalized` commitments are supported by Solana clusters")]
     UnsupportedCommitment(String),
-    /// Unable to cast a wasm_bindgen closure to Function
-    #[error("Unable to cast a wasm_bindgen closure to Function")]
-    CastClosureToFunction,
     /// The wallet version is invalid, expected SemVer version
     #[error("The wallet version `{0}` is invalid, expected SemVer version")]
     InvalidWalletVersion(String),
     /// Unexpected SemVer number to parse to a `u8`
     #[error("Unexpected SemVer number `{0}` to parse to a `u8`")]
     InvalidSemVerNumber(String),
-    /// Expected an array JsValue.
-    #[error("Expected an array `{0}` JsValue.")]
-    ExpectedArray(String),
-    /// Expected an `String` JsValue.
-    #[error("Expected an `{0}` String JsValue.")]
-    ExpectedString(String),
-    /// The byte length should be equal to 32 bytes in length
-    #[error("The byte length should be equal to 32 bytes in length")]
-    Expected32ByteLength,
-    /// The byte length should be equal to 64 bytes in length
-    #[error("The byte length should be equal to 64 bytes in length")]
-    Expected64ByteLength,
-    /// Expected the JsValue to be an Object
-    #[error("Expected the `{0}` JsValue to be an Object")]
-    ExpectedObject(String),
     /// The version was not found
     #[error("The version was not found")]
     VersionNotFound,
@@ -89,34 +67,33 @@ pub enum WalletError {
     #[error("The blockchain `{0}` is not supported")]
     UnsupportedChain(String),
     /// The `connect` function of the `standard:connect` namespace was not found while parsing a wallet
-    #[error("The `connect` function of the `standard:connect` namespace was not found while parsing a wallet")]
+    #[error("The `connect` function of the `standard:connect` namespace was not found while parsing a wallet.")]
     MissingConnectFunction,
+    /// The wallet `standard:disconnect` feature is missing
+    #[error("The wallet `standard:disconnect` feature is missing")]
+    MissingDisconnectFunction,
     /// Attempted to connect to a wallet that does not exist or is yet to be registered
-    #[error("Attempted to connect to a wallet that does not exist or is yet to be registered")]
-    WalletNotFound,
+    #[error(
+        "Attempted to connect to a `{0}` wallet that does not exist or is yet to be registered"
+    )]
+    WalletNotFound(String),
     /// Attempted to connect to an account that does not exist or might have been disconnected
     #[error(
-        "Attempted to connect to an account that does not exist or might have been disconnected"
+        "Attempted to connect to an account `{0}` that does not exist or might have been disconnected"
     )]
-    AccountNotFound,
-    /// Expected JsValue of a `js_sys::Function`
-    #[error("Expected `{0}` to be a `JsValue` of type `js_sys::Function`")]
-    JsValueNotFunction(String),
-    /// The JsValue is not a Uint8Array
-    #[error("The JsValue `{0}` is not a js_sys::Array")]
-    JsValueNotUint8Array(String),
-    /// The JsValue is not a js_sys::Array
-    #[error("The JsValue `{0}` is not a js_sys::Array")]
-    JsValueNotArray(String),
+    AccountNotFound(String),
+    /// Attmepted to call a method or function that requires a wallet to be connected. Connect a wallet first
+    #[error("Attmepted to call a method or function that requires a wallet to be connected. Connect a wallet first")]
+    NoConnectedWallet,
+    /// Attmepted to call a method or function that requires an to be connected. Send a request to the connected wallet to connect an account first
+    #[error("Attmepted to call a method or function that requires an to be connected. Send a request to the connected wallet to connect an account first")]
+    NoConnectedAccount,
     /// Unable to connect to a wallet. The user may have rejected the request
     #[error("Unable to connect to a wallet. Error `{0}` request")]
     WalletConnectError(String),
     /// The connect method did not return any accounts
     #[error("The connect method did not return any accounts")]
     ConnectHasNoAccounts,
-    /// The wallet `standard:disconnect` feature is missing
-    #[error("The wallet `standard:disconnect` feature is missing")]
-    MissingDisconnectFunction,
     /// Unable to disconnect wallet.
     #[error("Wallet Disconnect error - `{0}`")]
     WalletDisconnectError(String),
@@ -124,14 +101,11 @@ pub enum WalletError {
     #[error("Encountered `standard:events` error `{0}`")]
     StandardEventsError(String),
     /// Called The Function for `standard:events` yet the wallet does not provide it
-    #[error("Called The Function for `standard:events` yet the wallet does not provide it")]
-    MissingStandardEventsFunction,
-    /// The wallet did not register a signIn function for `solana:signIn` namespece
-    #[error("The wallet did not register a signIn function for `solana:signIn` namespece")]
-    MissingSignInFunction,
-    /// Unable to cast a `JsValue` to a `js_sys::Function`
-    #[error("Unable to cast a `JsValue` to a `js_sys::Function`")]
-    CastJsValueAsFunction,
+    #[error("Called The Function for `standard:events` yet the wallet `{0}` does not provide it")]
+    MissingStandardEventsFunction(String),
+    /// The wallet does not support Sign In With Solana (SIWS) as no signin function was found in the for `solana:signIn` namespace"
+    #[error("The wallet `{0}` does not support Sign In With Solana (SIWS) as no signin function was found in the for `solana:signIn` namespace")]
+    MissingSignInFunction(String),
     /// This token expires earlier than it was issued. Make sure to set the expiry time to be a later date than the issued time
     #[error("This token expires earlier than it was issued. Make sure to set the expiry time to be a later date than the issued time")]
     ExpiryTimeEarlierThanIssuedTime,
@@ -183,15 +157,17 @@ pub enum WalletError {
     /// The `sendAndSignTransaction` method did not return any signature
     #[error("The `sendAndSignTransaction` method did not return any signature")]
     SendAndSignTransactionSignatureEmpty,
+    /// An internal error was encountered trying to convert a `JsValue` to a Rust data type
+    #[error(
+        "An internal error `{0}` was encountered trying to convert a `JsValue` to a Rust data type"
+    )]
+    JsCast(String),
 }
 
 impl From<JsValue> for WalletError {
     fn from(value: JsValue) -> Self {
         let reflect = |key: &str| -> Result<String, Self> {
-            Reflect::get(&value, &key.into())
-                .map_err(|_: JsValue| WalletError::UnableToParseJsError)?
-                .as_string()
-                .ok_or(WalletError::JsErrorNotString)
+            Reflect::get(&value, &key.into()).map(|value| Reflection::as_string(&value))?
         };
 
         let name = match reflect("name") {

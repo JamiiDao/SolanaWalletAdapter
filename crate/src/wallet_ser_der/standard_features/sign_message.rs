@@ -1,6 +1,5 @@
 use ed25519_dalek::{Signature, VerifyingKey};
-use js_sys::Uint8Array;
-use wasm_bindgen::{JsCast, JsValue};
+use wasm_bindgen::JsValue;
 
 use core::str;
 
@@ -21,6 +20,7 @@ impl SignMessage {
             version,
             "signMessage",
             "solana",
+            WalletError::MissingSignMessageFunction,
         )?))
     }
 
@@ -44,11 +44,10 @@ impl SignMessage {
 
         let outcome = js_sys::Promise::resolve(&outcome);
         let signed_message_result = wasm_bindgen_futures::JsFuture::from(outcome).await?;
-        let signed_message_result = signed_message_result
-            .dyn_ref::<js_sys::Array>()
-            .ok_or(WalletError::JsValueNotArray(
+        let signed_message_result = Reflection::as_array_owned(signed_message_result)
+            .or(Err(WalletError::JsCast(
                 "solana:signedMessage -> SignedMessageOutput".to_string(),
-            ))?
+            )))?
             .to_vec();
 
         if let Some(inner) = signed_message_result.first() {
@@ -56,9 +55,8 @@ impl SignMessage {
             let signed_message = reflect_outcome.reflect_inner("signedMessage")?;
             let signature_value = reflect_outcome.reflect_inner("signature")?;
 
-            let signed_message = signed_message
-                .dyn_into::<Uint8Array>()
-                .or(Err(WalletError::JsValueNotUint8Array(
+            let signed_message = Reflection::as_bytes(&signed_message)
+                .or(Err(WalletError::JsCast(
                     "solana:signedMessage -> SignedMessageOutput::signedMessage".to_string(),
                 )))?
                 .to_vec();
@@ -67,10 +65,7 @@ impl SignMessage {
                 return Err(WalletError::SignedMessageMismatch);
             }
 
-            let signature = Utils::jsvalue_to_signature(
-                signature_value,
-                "solana::signMessage -> SignedMessageOutput::signature",
-            )?;
+            let signature = Utils::jsvalue_to_signature(&signature_value)?;
 
             let public_key = Utils::public_key(wallet_account.public_key)?;
 

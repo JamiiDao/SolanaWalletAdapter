@@ -12,10 +12,18 @@ pub struct SignIn(StandardFunction);
 
 impl SignIn {
     /// Parse the `solana:signin` callback function from the [JsValue]
-    pub fn new(value: JsValue, version: SemverVersion) -> WalletResult<Self> {
-        Ok(Self(StandardFunction::new(
-            value, version, "signIn", "solana",
-        )?))
+    pub fn new(value: JsValue, version: SemverVersion) -> Option<Self> {
+        StandardFunction::new(
+            value,
+            version,
+            "signIn",
+            "solana",
+            WalletError::MissingSignInFunction(
+                "This wallet does not support SignIn with Solana.".to_string(),
+            ),
+        )
+        .map(|value| Self(value))
+        .ok()
     }
 
     pub(crate) async fn call_signin(
@@ -31,7 +39,7 @@ impl SignIn {
         let outcome = js_sys::Promise::resolve(&outcome);
 
         let value = wasm_bindgen_futures::JsFuture::from(outcome).await?;
-        let output_array = Reflection::new(value)?.get_array()?;
+        let output_array = Reflection::as_array(&value)?;
 
         let first_index = Reflection::new(output_array.get(0))?;
         let account = first_index.reflect_inner("account")?;
@@ -49,9 +57,7 @@ impl SignIn {
         signin_input.check_eq(message)?;
 
         let signature_value = first_index.reflect_inner("signature")?;
-        let signature_bytes: [u8; 64] = signature_value
-            .dyn_into::<js_sys::Uint8Array>()?
-            .to_vec()
+        let signature_bytes: [u8; 64] = Reflection::as_bytes(&signature_value)?
             .try_into()
             .or(Err(WalletError::InvalidEd25519SignatureBytes))?;
 

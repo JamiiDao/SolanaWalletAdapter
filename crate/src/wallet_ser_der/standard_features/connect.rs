@@ -13,7 +13,11 @@ impl Connect {
     /// Initialize a new `standard:connect` function by parsing a [JsValue]
     pub fn new(value: JsValue, version: SemverVersion) -> WalletResult<Self> {
         Ok(Self(StandardFunction::new(
-            value, version, "connect", "standard",
+            value,
+            version,
+            "connect",
+            "standard",
+            WalletError::MissingConnectFunction,
         )?))
     }
 
@@ -23,11 +27,12 @@ impl Connect {
 
         let outcome = js_sys::Promise::resolve(&outcome);
 
-        match wasm_bindgen_futures::JsFuture::from(outcome).await {
-            Ok(success) => {
-                let get_accounts = Reflection::new(success)?.get_js_array("accounts")?;
+        wasm_bindgen_futures::JsFuture::from(outcome)
+            .await
+            .map(|success| {
+                let get_accounts = Reflection::new(success)?.reflect_js_array("accounts")?;
 
-                let wallet_account = get_accounts
+                get_accounts
                     .into_iter()
                     .map(|raw_account| WalletAccount::parse(Reflection::new(raw_account)?))
                     .collect::<WalletResult<Vec<WalletAccount>>>()
@@ -37,15 +42,12 @@ impl Connect {
                         } else {
                             Ok(accounts.remove(0))
                         }
-                    })??;
-
-                Ok(wallet_account)
-            }
-            Err(error) => {
+                    })?
+            })?
+            .map_err(|error| {
                 let value: WalletError = error.into();
 
-                Err(WalletError::WalletConnectError(value.to_string()))
-            }
-        }
+                WalletError::WalletConnectError(value.to_string())
+            })
     }
 }

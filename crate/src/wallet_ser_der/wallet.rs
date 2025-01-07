@@ -1,5 +1,5 @@
 use ed25519_dalek::Signature;
-use wasm_bindgen::{JsCast, JsValue};
+use wasm_bindgen::JsValue;
 use web_sys::js_sys::Reflect;
 
 use crate::{
@@ -46,7 +46,7 @@ impl Wallet {
         if let Some(fn_exists) = self.features.sign_in.as_ref() {
             fn_exists.call_signin(signin_input, public_key).await
         } else {
-            Err(WalletError::MissingSignInFunction)
+            Err(WalletError::MissingSignInFunction(self.name.clone()))
         }
     }
 
@@ -96,7 +96,9 @@ impl Wallet {
         self.features
             .events
             .as_ref()
-            .ok_or(WalletError::MissingStandardEventsFunction)?
+            .ok_or(WalletError::MissingStandardEventsFunction(
+                self.name.clone(),
+            ))?
             .call_standard_event()
             .await
     }
@@ -128,8 +130,8 @@ impl Wallet {
             })
             .collect::<WalletResult<Vec<Cluster>>>()?;
 
-        let name = reflection.string("name")?;
-        let version = SemverVersion::parse(&reflection.string("version")?)?;
+        let name = reflection.reflect_string("name")?;
+        let version = SemverVersion::parse(&reflection.reflect_string("version")?)?;
         let icon = WalletIcon::from_jsvalue(&reflection)?;
         let accounts = Self::get_accounts(&reflection, "accounts")?;
         let (features, supported_features) = Features::parse(&reflection)?;
@@ -150,13 +152,7 @@ impl Wallet {
         let accounts_raw = Reflect::get(reflection.get_inner(), &key.into())?;
         Reflection::check_is_undefined(&accounts_raw)?;
 
-        if !accounts_raw.is_array() {
-            return Err(WalletError::ExpectedArray(
-                "Reflection for `accounts` key".to_string(),
-            ));
-        }
-
-        let accounts_array: js_sys::Array = accounts_raw.unchecked_into();
+        let accounts_array = Reflection::as_array(&accounts_raw)?;
 
         accounts_array
             .iter()

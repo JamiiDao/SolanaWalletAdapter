@@ -81,7 +81,7 @@ impl WalletAdapter {
 
             Ok(())
         } else {
-            Err(WalletError::WalletNotFound)
+            Err(WalletError::NoConnectedWallet)
         }
     }
 
@@ -165,14 +165,14 @@ impl WalletAdapter {
     pub fn connected_account(&self) -> WalletResult<&WalletAccount> {
         self.connected_account
             .as_ref()
-            .ok_or(WalletError::AccountNotFound)
+            .ok_or(WalletError::NoConnectedAccount)
     }
 
     /// Get the connected [wallet](Wallet)
     pub fn connected_wallet(&self) -> WalletResult<&Wallet> {
         self.connected_wallet
             .as_ref()
-            .ok_or(WalletError::WalletNotFound)
+            .ok_or(WalletError::NoConnectedWallet)
     }
 
     /// Get an entry in the `Window` object
@@ -224,7 +224,7 @@ impl WalletAdapter {
     pub fn get_wallet(&self, wallet_name: &str) -> WalletResult<Wallet> {
         self.storage
             .get_wallet(wallet_name)
-            .ok_or(WalletError::WalletNotFound)
+            .ok_or(WalletError::NoConnectedWallet)
     }
 
     /// Check if the connected wallet supports mainnet cluster

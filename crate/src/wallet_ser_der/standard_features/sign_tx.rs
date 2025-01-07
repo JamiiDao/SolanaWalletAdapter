@@ -1,6 +1,6 @@
 use ed25519_dalek::Signature;
 use js_sys::Function;
-use wasm_bindgen::{JsCast, JsValue};
+use wasm_bindgen::JsValue;
 
 use core::hash::Hash;
 
@@ -30,12 +30,9 @@ impl SignTransaction {
         let inner_value = reflection
             .reflect_inner(key)
             .or(Err(WalletError::MissingSignTransactionFunction))?;
-        let callback =
-            inner_value
-                .dyn_into::<Function>()
-                .or(Err(WalletError::JsValueNotFunction(
-                    String::from("Namespace[`solana:") + key + "->" + key + "`]",
-                )))?;
+        let callback = Reflection::as_function_owned(inner_value).or(Err(WalletError::JsCast(
+            String::from("Namespace[`solana:") + key + "->" + key + "`]",
+        )))?;
 
         let (legacy, version_zero) = Self::get_tx_version_support(&reflection)?;
 
@@ -63,11 +60,10 @@ impl SignTransaction {
             .or(Err(WalletError::ExpectedValueNotFound(
                 "supportedTransactionVersions".to_string(),
             )))?;
-        let tx_version_support = tx_version_support_jsvalue
-            .dyn_ref::<js_sys::Array>()
-            .ok_or(WalletError::ExpectedArray(
-                "supportedTransactionVersions".to_string(),
-            ))?;
+        let tx_version_support =
+            Reflection::as_array(&tx_version_support_jsvalue).or(Err(WalletError::JsCast(
+                "supportedTransactionVersions is value is not an array".to_string(),
+            )))?;
 
         let mut legacy = false;
         let mut version_zero = false;
@@ -111,7 +107,7 @@ impl SignTransaction {
         let outcome = js_sys::Promise::resolve(&outcome);
 
         let success = wasm_bindgen_futures::JsFuture::from(outcome).await?;
-        Reflection::new(success)?.get_bytes_from_vec("signedTransaction")
+        Reflection::new(success)?.as_vec_of_bytes("signedTransaction")
     }
 
     pub(crate) async fn call_sign_and_send_transaction(
@@ -136,7 +132,7 @@ impl SignTransaction {
         let success = wasm_bindgen_futures::JsFuture::from(outcome).await?;
 
         Reflection::new(success)?
-            .get_bytes_from_vec("signature")?
+            .as_vec_of_bytes("signature")?
             .first()
             .map(|value| {
                 let bytes = Utils::to64byte_array(value)?;

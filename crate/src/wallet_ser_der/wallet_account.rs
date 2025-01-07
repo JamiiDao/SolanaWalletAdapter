@@ -99,8 +99,8 @@ impl WalletAccount {
 
     /// Parse A [WalletAccount] from [JsValue]
     pub(crate) fn parse(reflection: Reflection) -> WalletResult<Self> {
-        let address = reflection.string("address")?;
-        let public_key = reflection.byte32array("publicKey")?;
+        let address = reflection.reflect_string("address")?;
+        let public_key = reflection.reflect_byte32array("publicKey")?;
         let chains = reflection.vec_string("chains")?;
         let features = reflection.vec_string("features")?;
 
@@ -148,16 +148,7 @@ impl WalletAccount {
 
         let icon = WalletIcon::from_jsvalue(&reflection)?;
 
-        let label = match reflection.string("label") {
-            Ok(value) => Some(value),
-            Err(error) => {
-                if error == WalletError::JsValueNotString {
-                    Option::None
-                } else {
-                    return Err(error);
-                }
-            }
-        };
+        let label = reflection.reflect_string("label").ok();
 
         Ok(Self {
             address,

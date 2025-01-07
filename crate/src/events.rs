@@ -5,7 +5,7 @@ use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
 use web_sys::{CustomEvent, CustomEventInit, Window};
 
 use crate::{
-    StorageType, Utils, Wallet, WalletError, WalletResult, WalletStorage,
+    Reflection, StorageType, Wallet, WalletError, WalletResult, WalletStorage,
     WINDOW_APP_READY_EVENT_TYPE,
 };
 
@@ -59,7 +59,7 @@ impl<'a> InitEvents<'a> {
                 })
                 .unwrap();
 
-            Utils::jsvalue_to_error(detail.call1(
+            Reflection::jsvalue_to_error(detail.call1(
                 &JsValue::null(),
                 &Self::register_object(inner_storage.clone()),
             ))
@@ -69,7 +69,7 @@ impl<'a> InitEvents<'a> {
         let listener_fn = listener_closure
             .as_ref()
             .dyn_ref::<Function>()
-            .ok_or(WalletError::CastClosureToFunction)?;
+            .ok_or(WalletError::JsCast("Unable to cast register event listener closure event to function. Error origin: `InitEvents::register_wallet_event`".to_string()))?;
 
         self.window.add_event_listener_with_callback(
             crate::WINDOW_REGISTER_WALLET_EVENT_TYPE,

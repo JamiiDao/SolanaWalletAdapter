@@ -15,6 +15,7 @@ impl Disconnect {
             version,
             "disconnect",
             "standard",
+            WalletError::MissingDisconnectFunction,
         )?))
     }
 

@@ -1,7 +1,7 @@
 use core::hash::Hash;
 
 use js_sys::Function;
-use wasm_bindgen::{JsCast, JsValue};
+use wasm_bindgen::JsValue;
 
 use crate::{Reflection, SemverVersion, WalletError, WalletResult};
 
@@ -23,15 +23,13 @@ impl StandardFunction {
         version: SemverVersion,
         key: &str,
         namespace: &str,
+        error: WalletError,
     ) -> WalletResult<Self> {
-        let fn_value = Reflection::new(value)?
-            .reflect_inner(key)
-            .or(Err(WalletError::MissingConnectFunction))?;
-        let get_fn = fn_value
-            .dyn_into::<Function>()
-            .or(Err(WalletError::JsValueNotFunction(
-                String::from("Namespace[`") + namespace + ":" + key + "-> " + key + "`]",
-            )))?;
+        let fn_value = Reflection::new(value)?.reflect_inner(key).or(Err(error))?;
+        let js_typeof = Reflection::js_typeof(&fn_value);
+        let get_fn = Reflection::as_function_owned(fn_value).or(Err(WalletError::JsCast(
+            namespace.to_string() + " is not a function but `" + &js_typeof + "`.",
+        )))?;
 
         Ok(Self {
             version,
