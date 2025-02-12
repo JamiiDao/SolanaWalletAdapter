@@ -1,5 +1,5 @@
-use js_sys::{wasm_bindgen::JsValue, Reflect};
 use thiserror::Error;
+use web_sys::js_sys::{wasm_bindgen::JsValue, Reflect};
 
 use crate::WalletEvent;
 

@@ -1,8 +1,10 @@
 use std::borrow::Cow;
 
 use ed25519_dalek::{Signature, Verifier, VerifyingKey};
-use js_sys::{Array, Function, Object, Reflect};
-use wasm_bindgen::{JsCast, JsValue};
+use web_sys::{
+    js_sys::{self, Array, Function, Object, Reflect},
+    wasm_bindgen::{JsCast, JsValue},
+};
 
 use crate::{WalletError, WalletResult};
 

@@ -1,7 +1,7 @@
 use std::{future::Future, pin::Pin};
 
 use async_channel::Receiver;
-use wasm_bindgen::{prelude::Closure, JsValue};
+use web_sys::wasm_bindgen::{prelude::Closure, JsValue};
 
 use crate::{
     ConnectionInfoInner, Reflection, SemverVersion, StandardFunction, WalletAccount, WalletError,

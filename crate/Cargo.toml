@@ -15,8 +15,6 @@ ed25519-dalek = { version = "2.1.1", default-features = false, features = [
 ] }
 async-channel.workspace = true
 web-sys.workspace = true
-js-sys.workspace = true
-wasm-bindgen.workspace = true
 thiserror = "2.0.3"
 wasm-bindgen-futures.workspace = true
 humantime = "2.1.0"

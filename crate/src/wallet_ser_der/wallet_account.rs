@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use wasm_bindgen::JsValue;
+use web_sys::wasm_bindgen::JsValue;
 
 use crate::{
     Reflection, Utils, WalletError, WalletIcon, WalletResult,

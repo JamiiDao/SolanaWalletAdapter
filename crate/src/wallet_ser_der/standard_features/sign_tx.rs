@@ -1,6 +1,8 @@
 use ed25519_dalek::Signature;
-use js_sys::Function;
-use wasm_bindgen::JsValue;
+use web_sys::{
+    js_sys::{self, Function},
+    wasm_bindgen::JsValue,
+};
 
 use core::hash::Hash;
 

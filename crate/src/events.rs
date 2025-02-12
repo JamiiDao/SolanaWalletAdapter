@@ -1,9 +1,11 @@
 use std::rc::Rc;
 
 use async_channel::{Receiver, Sender};
-use js_sys::{Object, Reflect};
-use wasm_bindgen::{prelude::Closure, JsValue};
-use web_sys::{CustomEvent, CustomEventInit, Window};
+use web_sys::{
+    js_sys::{Object, Reflect},
+    wasm_bindgen::{prelude::Closure, JsValue},
+    CustomEvent, CustomEventInit, Window,
+};
 
 use crate::{
     Reflection, StorageType, Utils, Wallet, WalletAccount, WalletAdapter, WalletError,

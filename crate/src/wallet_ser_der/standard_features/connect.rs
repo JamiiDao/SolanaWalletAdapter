@@ -1,4 +1,4 @@
-use wasm_bindgen::JsValue;
+use web_sys::{js_sys, wasm_bindgen::JsValue};
 
 use crate::{
     Reflection, SemverVersion, StandardFunction, WalletAccount, WalletError, WalletResult,

@@ -1,6 +1,6 @@
 use core::hash::Hash;
 
-use js_sys::Function;
+use web_sys::js_sys::Function;
 
 use crate::{Reflection, SemverVersion, WalletError, WalletResult};
 

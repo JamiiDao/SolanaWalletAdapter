@@ -1,8 +1,10 @@
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use js_sys::Array;
-use wasm_bindgen::JsValue;
-use web_sys::Window;
+use web_sys::{
+    js_sys::{self, Array},
+    wasm_bindgen::JsValue,
+    Window,
+};
 
 use crate::{Cluster, Reflection, Utils, WalletError, WalletResult};
 

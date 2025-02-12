@@ -1,6 +1,6 @@
 use async_channel::Receiver;
 use ed25519_dalek::Signature;
-use wasm_bindgen::JsValue;
+use web_sys::wasm_bindgen::JsValue;
 
 use crate::{
     Cluster, ConnectionInfoInner, Features, Reflection, SemverVersion, WalletAccount, WalletError,

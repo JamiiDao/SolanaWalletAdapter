@@ -1,5 +1,5 @@
 use ed25519_dalek::{Signature, VerifyingKey};
-use wasm_bindgen::JsValue;
+use web_sys::{js_sys, wasm_bindgen::JsValue};
 
 use core::str;
 
