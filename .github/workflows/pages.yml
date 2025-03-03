@@ -2,9 +2,9 @@ name: Mdbook build
 
 on:
   push:
-    branches: ["deploy-book"]
+    branches: ["master"]
   pull_request:
-    branches: [ deploy-book ]
+    branches: [ master ]
 
 jobs:
   build:
