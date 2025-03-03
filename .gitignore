@@ -26,3 +26,4 @@ Cargo.lock
 /resources/pkg
 /examples/simple/resources/pkg
 .vscode
+wallet-adapter-book/book

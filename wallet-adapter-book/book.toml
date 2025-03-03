@@ -1,9 +1,9 @@
 [book]
-authors = ["zjp <jiping_zhou@foxmail.com>"]
-language = "zh"
+authors = ["448-OG <superuser@448.africa>"]
+language = "en"
 multilingual = false
 src = "src"
-title = "book-name"
+title = "Rust Wallet Adapter Library for Solana Dapps"
 
 [preprocessor.theme]
 pagetoc = false
