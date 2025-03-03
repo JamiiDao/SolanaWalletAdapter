@@ -36,7 +36,7 @@ jobs:
         tar -xzf mdbook-theme_linux.tar.gz -C ~/tools
         echo ~/tools >> $GITHUB_PATH
     - name: Build 
-      run: mdbook build docs
+      run: mdbook build
 
     - name: Upload pages artifacts
       uses: actions/upload-pages-artifact@v3
