@@ -1,50 +1,66 @@
-# Simple workflow for deploying static content to GitHub Pages
-name: Deploy static content to Pages
+name: Mdbook build
 
 on:
-  # Runs on pushes targeting the default branch
   push:
-    branches: ["master"]
-  workflow_run:
-    workflows: ["Mdbook build"]
-    types:
-      - completed
-
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-# Disallow one concurrent deployment
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
+    branches: ["deploy-book"]
+  pull_request:
+    branches: [ deploy-book ]
 
 jobs:
-  # Single deploy job since we're just deploying
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # To push a branch 
+      pull-requests: write  # To create a PR from that branch
+    env:
+      MDBOOK_VERSION: '0.4.45'
+      # MDBOOK_MERMAID_VERSION: '0.13.0'
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: false
+    - name: Install mdbook
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        mkdir ~/tools
+        curl -L https://github.com/rust-lang/mdBook/releases/download/v$MDBOOK_VERSION/mdbook-v$MDBOOK_VERSION-x86_64-unknown-linux-gnu.tar.gz | tar xz -C ~/tools
+        # curl -L https://github.com/badboy/mdbook-mermaid/releases/download/v$MDBOOK_MERMAID_VERSION/mdbook-mermaid-v$MDBOOK_MERMAID_VERSION-x86_64-unknown-linux-gnu.tar.gz | tar xz -C ~/tools
+
+        gh release download -R Michael-F-Bryan/mdbook-linkcheck -p mdbook-linkcheck.x86_64-unknown-linux-gnu.zip
+        unzip mdbook-linkcheck.x86_64-unknown-linux-gnu.zip -d ~/tools
+        chmod +x ~/tools/mdbook-linkcheck
+
+        gh release download -R zjp-CN/mdbook-theme -p mdbook-theme_linux.tar.gz
+        tar -xzf mdbook-theme_linux.tar.gz -C ~/tools
+        echo ~/tools >> $GITHUB_PATH
+    - name: Build 
+      run: mdbook build
+
+    - name: Upload pages artifacts
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: docs/book
+
+  # Deploy job
   deploy:
+    # Add a dependency to the build job
+    needs: build
+
+    # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
+    permissions:
+      pages: write      # to deploy to Pages
+      id-token: write   # to verify the deployment originates from an appropriate source
+
+    # Deploy to the github-pages environment
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+
+    # Specify runner + deployment step
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      # actions/download-artifact@v3 does not allow sharing across workflows
-      - name: Download artifact
-        id: download-artifact
-        uses: dawidd6/action-download-artifact@v2
-        with:
-          name: book
-          path: docs/book/
-          workflow: build-book.yml
-      - name: Setup Pages
-        uses: actions/configure-pages@v2
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v1
-        with:
-          path: docs/book/
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v1
+        uses: actions/deploy-pages@v4 # or specific "vX.X.X" version tag for this action
