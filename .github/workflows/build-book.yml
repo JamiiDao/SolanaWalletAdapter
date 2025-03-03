@@ -34,9 +34,9 @@ jobs:
       - name: Build
         run: mdbook build
         working-directory: wallet-adapter-book
-        
+
       # share between different jobs
       - uses: actions/upload-artifact@v3
         with:
           name: book
-          path: wallet-adapter-book/book/
+          path: docs/book/

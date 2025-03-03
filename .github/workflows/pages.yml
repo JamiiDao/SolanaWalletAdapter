@@ -37,14 +37,14 @@ jobs:
         uses: dawidd6/action-download-artifact@v2
         with:
           name: book
-          path: wallet-adapter-book/book/
+          path: docs/book/
           workflow: build-book.yml
       - name: Setup Pages
         uses: actions/configure-pages@v2
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
-          path: wallet-adapter-book/book/
+          path: docs/book/
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v1
