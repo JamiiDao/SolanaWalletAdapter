@@ -5,6 +5,8 @@
 
 A lightweight Rust Solana Wallet that can be used in Rust based frontends and WebAssembly.
 
+This project was supported by the Solana Foundation.
+
 Read the book at: [https://jamiidao.github.io/SolanaWalletAdapter/](https://jamiidao.github.io/SolanaWalletAdapter/)
 
 ### Documentation Links
