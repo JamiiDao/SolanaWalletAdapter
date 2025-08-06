@@ -162,6 +162,6 @@ impl core::fmt::Display for WalletEvent {
             Self::BackgroundTaskError(error) => &format!("Task error: {error:?}"),
             Self::Skip => "Skipped",
         };
-        write!(f, "{}", as_str)
+        write!(f, "{as_str}")
     }
 }
