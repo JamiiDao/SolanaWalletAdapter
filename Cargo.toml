@@ -3,7 +3,7 @@ members = ["crate", "partial-idl-parser"]
 resolver = "2"
 
 [workspace.package]
-version = "1.1.2"
+version = "1.1.3"
 authors = ["448-OG <superuser@448.africa>"]
 description = "Solana Wallet Adapter for Rust clients written in pure Rust"
 homepage = "https://github.com/JamiiDao"
@@ -16,7 +16,7 @@ edition = "2021"
 rust-version = "1.84"
 
 [workspace.dependencies]
-async-channel = "2.3.1"
+async-channel = "2.5.0"
 log = "0.4.27"
 wasm-bindgen-futures = "0.4.50"
 
