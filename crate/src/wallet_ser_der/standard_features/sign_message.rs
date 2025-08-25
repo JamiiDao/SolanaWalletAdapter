@@ -1,10 +1,12 @@
 use ed25519_dalek::{Signature, VerifyingKey};
+use wallet_adapter_common::WalletCommonUtils;
 use web_sys::{js_sys, wasm_bindgen::JsValue};
 
 use core::str;
 
 use crate::{
-    Reflection, SemverVersion, StandardFunction, Utils, WalletAccount, WalletError, WalletResult,
+    InnerUtils, Reflection, SemverVersion, StandardFunction, WalletAccount, WalletError,
+    WalletResult,
 };
 
 /// `solana:signMessage` containing the `version` and `callback` within
@@ -70,18 +72,18 @@ impl SignMessage {
                 return Err(WalletError::SignedMessageMismatch);
             }
 
-            let signature = Utils::jsvalue_to_signature(
+            let signature = InnerUtils::jsvalue_to_signature(
                 signature_value,
                 "solana::signMessage -> SignedMessageOutput::signature",
             )?;
 
-            let public_key = Utils::public_key(wallet_account.public_key)?;
+            let public_key = WalletCommonUtils::public_key(&wallet_account.account.public_key)?;
 
-            Utils::verify_signature(public_key, message, signature)?;
+            WalletCommonUtils::verify_signature(public_key, message, signature)?;
 
             Ok(SignedMessageOutput {
                 message,
-                public_key: wallet_account.public_key,
+                public_key: wallet_account.account.public_key,
                 signature: signature.to_bytes(),
             })
         } else {
@@ -108,23 +110,23 @@ impl SignedMessageOutput<'_> {
 
     /// Get the public key as an [Ed25519 Public Key](VerifyingKey)
     pub fn public_key(&self) -> WalletResult<VerifyingKey> {
-        Utils::public_key(self.public_key)
+        Ok(WalletCommonUtils::public_key(&self.public_key)?)
     }
 
     /// Get the Base58 address of the  [Ed25519 Public Key](VerifyingKey) that signed the message
     pub fn address(&self) -> WalletResult<String> {
-        Ok(Utils::address(self.public_key()?))
+        Ok(WalletCommonUtils::address(self.public_key()?))
     }
 
     /// Get the [Ed25519 Signature](Signature) that was generated when
     /// the [Ed25519 Public Key](VerifyingKey) signed the UTF-8 encoded message
     pub fn signature(&self) -> Signature {
-        Utils::signature(self.signature)
+        WalletCommonUtils::signature(&self.signature)
     }
 
     /// Get the  [Ed25519 Signature](Signature) encoded in Base58 format
     pub fn base58_signature(&self) -> WalletResult<String> {
-        Ok(Utils::base58_signature(self.signature()))
+        Ok(WalletCommonUtils::base58_signature(self.signature()))
     }
 }
 

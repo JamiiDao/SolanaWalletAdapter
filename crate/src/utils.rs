@@ -1,6 +1,4 @@
-use std::borrow::Cow;
-
-use ed25519_dalek::{Signature, Verifier, VerifyingKey};
+use wallet_adapter_common::WalletCommonUtils;
 use web_sys::{
     js_sys::{self, Array, Function, Object, Reflect},
     wasm_bindgen::{JsCast, JsValue},
@@ -8,39 +6,10 @@ use web_sys::{
 
 use crate::{WalletError, WalletResult};
 
-/// A 32 byte array representing a Public Key
-pub type PublicKeyBytes = [u8; 32];
-
-/// A 64 byte array representing a Signature
-pub type SignatureBytes = [u8; 64];
-
-/// The Version of the Wallet Standard currently implemented.
-/// This may be used by the app to determine compatibility and feature detect.
-pub const WALLET_STANDARD_VERSION: &str = "1.0.0";
-
 /// Helper utilities
-pub struct Utils;
+pub struct InnerUtils;
 
-impl Utils {
-    /// Generate a public key from random bytes. This is useful for testing
-    pub fn public_key_rand() -> [u8; 32] {
-        Self::rand_32bytes()
-    }
-
-    /// Generate a 32 byte array from random bytes
-    pub fn rand_32bytes() -> [u8; 32] {
-        use rand_chacha::ChaCha20Rng;
-        use rand_core::{RngCore, SeedableRng};
-
-        let mut rng = ChaCha20Rng::from_os_rng();
-
-        let mut buffer = [0u8; 32];
-
-        rng.fill_bytes(&mut buffer);
-
-        buffer
-    }
-
+impl InnerUtils {
     /// Convert a [JsValue] error to a [WalletError]
     pub fn jsvalue_to_error<T: core::fmt::Debug>(
         value: Result<T, JsValue>,
@@ -52,42 +21,11 @@ impl Utils {
         }
     }
 
-    /// Parse a [PublicKey](VerifyingKey) from an array of 32 bytes
-    pub fn public_key(public_key_bytes: [u8; 32]) -> WalletResult<VerifyingKey> {
-        VerifyingKey::from_bytes(&public_key_bytes)
-            .or(Err(WalletError::InvalidEd25519PublicKeyBytes))
-    }
-
-    /// Parse a [Signature] from an array of 64 bytes
-    pub fn signature(signature_bytes: [u8; 64]) -> Signature {
-        Signature::from_bytes(&signature_bytes)
-    }
-
-    /// Convert a slice of bytes into a 32 byte array. This is useful especially if a [PublicKey](VerifyingKey) is
-    /// given as a slice instead of 32 byte array
-    pub fn to32byte_array(bytes: &[u8]) -> WalletResult<[u8; 32]> {
-        bytes.try_into().or(Err(WalletError::Expected32ByteLength))
-    }
-
-    /// Convert a slice of bytes into a 64 byte array. This is useful especially if a [Signature] is
-    /// given as a slice instead of 64 byte array
-    pub fn to64byte_array(bytes: &[u8]) -> WalletResult<[u8; 64]> {
-        bytes.try_into().or(Err(WalletError::Expected64ByteLength))
-    }
-
-    /// Verify a [message](str) using a [PublicKey](VerifyingKey) and [Signature]
-    pub fn verify_signature(
-        public_key: VerifyingKey,
-        message: &[u8],
-        signature: Signature,
-    ) -> WalletResult<()> {
-        public_key
-            .verify(message, &signature)
-            .or(Err(WalletError::InvalidSignature))
-    }
-
-    /// Convert a [JsValue] to a [Signature]
-    pub fn jsvalue_to_signature(value: JsValue, namespace: &str) -> WalletResult<Signature> {
+    /// Convert a [JsValue] to a [ed25519_dalek::Signature]
+    pub fn jsvalue_to_signature(
+        value: JsValue,
+        namespace: &str,
+    ) -> WalletResult<ed25519_dalek::Signature> {
         let in_case_of_error = Err(WalletError::InternalError(format!(
             "{namespace}: `{value:?}` cannot be cast to a Uint8Array, only a JsValue of bytes can be cast."
         )));
@@ -99,46 +37,7 @@ impl Utils {
             .try_into()
             .or(Err(WalletError::InvalidEd25519PublicKeyBytes))?;
 
-        Ok(Self::signature(signature_bytes))
-    }
-
-    /// Generate the Base58 address from a [PublicKey](VerifyingKey)
-    pub fn address(public_key: VerifyingKey) -> String {
-        bs58::encode(public_key.as_ref()).into_string()
-    }
-
-    /// Generate a Base58 encoded string from a [Signature]
-    pub fn base58_signature(signature: Signature) -> String {
-        bs58::encode(signature.to_bytes()).into_string()
-    }
-
-    /// Get the shortened string of the `Base58 string` .
-    /// It displays the first 4 characters and the last for characters
-    /// separated by ellipsis eg `FXdl...RGd4` .
-    /// If the string is less than 8 characters, an error is thrown
-    pub fn shorten_base58(base58_str: &str) -> WalletResult<Cow<str>> {
-        if base58_str.len() < 8 {
-            return Err(WalletError::InvalidBase58Address);
-        }
-
-        let first_part = &base58_str[..4];
-        let last_part = &base58_str[base58_str.len() - 4..];
-
-        Ok(Cow::Borrowed(first_part) + "..." + last_part)
-    }
-
-    /// Same as [Self::shorten_base58] but with a custom range
-    /// instead of taking the first 4 character and the last 4 characters
-    /// it uses a custom range.
-    pub fn custom_shorten_base58(base58_str: &str, take: usize) -> WalletResult<Cow<str>> {
-        if base58_str.len() < take + take {
-            return Err(WalletError::InvalidBase58Address);
-        }
-
-        let first_part = &base58_str[..take];
-        let last_part = &base58_str[base58_str.len() - take..];
-
-        Ok(Cow::Borrowed(first_part) + "..." + last_part)
+        Ok(WalletCommonUtils::signature(&signature_bytes))
     }
 }
 

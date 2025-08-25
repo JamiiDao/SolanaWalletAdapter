@@ -3,12 +3,13 @@ use std::{borrow::Borrow, sync::Arc};
 use async_channel::{bounded, Receiver};
 use async_lock::RwLock;
 use ed25519_dalek::Signature;
+use wallet_adapter_common::{clusters::Cluster, signin_standard::SignInOutput};
 use web_sys::{js_sys::Object, Document, Window};
 
 use crate::{
-    events::InitEvents, send_wallet_event, Cluster, SendOptions, SignInOutput, SignedMessageOutput,
-    SigninInput, Wallet, WalletAccount, WalletError, WalletEvent, WalletEventReceiver,
-    WalletEventSender, WalletResult, WalletStorage,
+    events::InitEvents, send_wallet_event, SendOptions, SignedMessageOutput, SigninInput, Wallet,
+    WalletAccount, WalletError, WalletEvent, WalletEventReceiver, WalletEventSender, WalletResult,
+    WalletStorage,
 };
 
 /// Contains the connected wallet and account.
@@ -109,7 +110,8 @@ impl ConnectionInfo {
                         } else if self.account.is_none()
                             && self.wallet.is_some()
                             && self.previous_accounts.iter().any(|wallet_account| {
-                                wallet_account.public_key == connected_account.public_key
+                                wallet_account.account.public_key
+                                    == connected_account.account.public_key
                             })
                         {
                             self.push_previous_account();
@@ -119,7 +121,8 @@ impl ConnectionInfo {
                         } else if wallet.name().as_bytes() == wallet_name.as_bytes()
                             && self.account.is_none()
                             && self.previous_accounts.iter().any(|wallet_account| {
-                                wallet_account.public_key == connected_account.public_key
+                                wallet_account.account.public_key
+                                    == connected_account.account.public_key
                             })
                         {
                             self.push_previous_account();

@@ -1,4 +1,5 @@
 use thiserror::Error;
+use wallet_adapter_common::WalletUtilsError;
 use web_sys::js_sys::{wasm_bindgen::JsValue, Reflect};
 
 use crate::WalletEvent;
@@ -170,6 +171,9 @@ pub enum WalletError {
     /// The `sendAndSignTransaction` method did not return any signature
     #[error("The `sendAndSignTransaction` method did not return any signature")]
     SendAndSignTransactionSignatureEmpty,
+    /// Overflow during SystemTime::checked_add(expiration_time_milliseconds) overflow
+    #[error("SystemTime::checked_add(expiration_time_milliseconds) overflow")]
+    SystemTimeCheckedAddOverflow,
     /// An operation resulted in an error. This is a convenience error that you can use to return any error
     /// that was not caused by the wallet adapter, example, parsing a recipient address or the result of parsing
     /// the body of a HTTP response using serde resulted in an error. Remember, this error is not from the [crate::WalletAdapter]
@@ -207,6 +211,35 @@ impl From<JsValue> for WalletError {
             message,
             name,
             stack,
+        }
+    }
+}
+
+impl From<WalletUtilsError> for WalletError {
+    fn from(value: WalletUtilsError) -> Self {
+        match value {
+            WalletUtilsError::SystemTimeCheckedAddOverflow => Self::SystemTimeCheckedAddOverflow,
+            WalletUtilsError::ExpiryTimeEarlierThanIssuedTime => {
+                Self::ExpiryTimeEarlierThanIssuedTime
+            }
+            WalletUtilsError::ExpirationTimeIsInThePast => Self::ExpirationTimeIsInThePast,
+            WalletUtilsError::NotBeforeTimeEarlierThanIssuedTime => {
+                Self::NotBeforeTimeEarlierThanIssuedTime
+            }
+            WalletUtilsError::NotBeforeTimeIsInThePast => todo!(),
+            WalletUtilsError::NotBeforeTimeLaterThanExpirationTime => {
+                Self::NotBeforeTimeLaterThanExpirationTime
+            }
+            WalletUtilsError::InvalidISO8601Timestamp(value) => {
+                Self::InvalidISO8601Timestamp(value)
+            }
+            WalletUtilsError::InvalidBase58Address => Self::InvalidBase58Address,
+            WalletUtilsError::InvalidEd25519PublicKeyBytes => Self::InvalidEd25519PublicKeyBytes,
+            WalletUtilsError::InvalidSignature => Self::InvalidSignature,
+            WalletUtilsError::Expected64ByteLength => Self::Expected64ByteLength,
+            WalletUtilsError::Expected32ByteLength => Self::Expected32ByteLength,
+            WalletUtilsError::NonceMustBeAtLeast8Characters => Self::NonceMustBeAtLeast8Characters,
+            WalletUtilsError::MessageResponseMismatch => Self::MessageResponseMismatch,
         }
     }
 }

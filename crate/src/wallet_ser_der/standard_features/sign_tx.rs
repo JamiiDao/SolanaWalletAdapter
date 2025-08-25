@@ -1,4 +1,5 @@
 use ed25519_dalek::Signature;
+use wallet_adapter_common::{clusters::Cluster, WalletCommonUtils};
 use web_sys::{
     js_sys::{self, Function},
     wasm_bindgen::JsValue,
@@ -6,9 +7,7 @@ use web_sys::{
 
 use core::hash::Hash;
 
-use crate::{
-    Cluster, Commitment, Reflection, SemverVersion, Utils, WalletAccount, WalletError, WalletResult,
-};
+use crate::{Commitment, Reflection, SemverVersion, WalletAccount, WalletError, WalletResult};
 
 /// Used in `solana:SignTransaction` and `solana:SignAndSendTransaction`.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -141,13 +140,14 @@ impl SignTransaction {
             .get_bytes_from_vec("signature")?
             .first()
             .map(|value| {
-                let bytes = Utils::to64byte_array(value)?;
-                Ok(Utils::signature(bytes))
+                let bytes = WalletCommonUtils::to64byte_array(value)?;
+                Ok(WalletCommonUtils::signature(&bytes))
             })
             .ok_or(WalletError::SendAndSignTransactionSignatureEmpty)?
     }
 }
 
+#[allow(clippy::non_canonical_partial_ord_impl)]
 impl PartialOrd for SignTransaction {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.version.cmp(&other.version))

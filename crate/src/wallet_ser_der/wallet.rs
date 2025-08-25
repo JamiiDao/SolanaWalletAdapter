@@ -1,29 +1,25 @@
+use std::borrow::Cow;
+
 use async_channel::Receiver;
 use ed25519_dalek::Signature;
+use wallet_adapter_common::{
+    chains::ChainSupport, clusters::Cluster, signin_standard::SignInOutput, WalletData,
+};
 use web_sys::wasm_bindgen::JsValue;
 
 use crate::{
-    Cluster, ConnectionInfoInner, Features, Reflection, SemverVersion, WalletAccount, WalletError,
-    WalletEventSender, WalletIcon, WalletResult,
+    ConnectionInfoInner, Features, Reflection, SemverVersion, SigninInput, WalletAccount,
+    WalletError, WalletEventSender, WalletIcon, WalletResult,
 };
 
-use super::{
-    ChainSupport, FeatureSupport, SendOptions, SignInOutput, SignedMessageOutput, SigninInput,
-};
+use super::{SendOptions, SignedMessageOutput};
 
 /// A wallet implementing wallet standard
-#[derive(Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Wallet {
-    name: String,
-    version: SemverVersion,
-    icon: Option<WalletIcon>,
-    accounts: Vec<WalletAccount>,
-    chains: Vec<Cluster>,
+    pub(crate) data: WalletData,
+    pub(crate) accounts: Vec<WalletAccount>,
     pub(crate) features: Features,
-    // Convenience field, instead of going through the `features` field
-    supported_features: FeatureSupport,
-    // Convenience field, instead of iteration through the `chains` field
-    supported_chains: ChainSupport,
 }
 
 impl Wallet {
@@ -115,22 +111,20 @@ impl Wallet {
         let chains = chains_raw
             .into_iter()
             .map(|chain_raw| {
-                let cluster = chain_raw.as_str().try_into();
-                if let Ok(cluster_inner) = &cluster {
-                    if cluster_inner == &Cluster::MainNet {
-                        supported_chains.mainnet = true;
-                    } else if cluster_inner == &Cluster::DevNet {
-                        supported_chains.devnet = true;
-                    } else if cluster_inner == &Cluster::TestNet {
-                        supported_chains.testnet = true;
-                    } else if cluster_inner == &Cluster::LocalNet {
-                        supported_chains.localnet = true;
-                    }
+                let cluster: Cluster = chain_raw.as_str().into();
+                if cluster == Cluster::MainNet {
+                    supported_chains.mainnet = true;
+                } else if cluster == Cluster::DevNet {
+                    supported_chains.devnet = true;
+                } else if cluster == Cluster::TestNet {
+                    supported_chains.testnet = true;
+                } else if cluster == Cluster::LocalNet {
+                    supported_chains.localnet = true;
                 }
 
                 cluster
             })
-            .collect::<WalletResult<Vec<Cluster>>>()?;
+            .collect::<Vec<Cluster>>();
 
         let name = reflection.string("name")?;
         let version = SemverVersion::parse(&reflection.string("version")?)?;
@@ -138,15 +132,29 @@ impl Wallet {
         let accounts = Self::get_accounts(&reflection, "accounts")?;
         let (features, supported_features) = Features::parse(&reflection)?;
 
-        Ok(Wallet {
-            name,
-            version,
-            icon,
+        let data = WalletData::new()
+            .set_name(&name)
+            .set_version(
+                wallet_adapter_common::SemverVersion::new()
+                    .set_major(version.major())
+                    .set_minor(version.minor())
+                    .set_patch(version.patch()),
+            )
+            .set_icon(icon.as_ref())
+            .replace_accounts(
+                accounts
+                    .iter()
+                    .map(|wallet_account| wallet_account.account.clone())
+                    .collect(),
+            )
+            .replace_chains(chains)
+            .set_supported_features(supported_features)
+            .set_supported_chains(supported_chains);
+
+        Ok(Self {
+            data,
             accounts,
-            chains,
             features,
-            supported_features,
-            supported_chains,
         })
     }
 
@@ -173,117 +181,78 @@ impl Wallet {
 
     /// Get the chains supported by the wallet
     pub fn chains(&self) -> &[Cluster] {
-        &self.chains
+        self.data.chains()
     }
 
     /// Check whether the wallet supports mainnet cluster
     pub fn mainnet(&self) -> bool {
-        self.supported_chains.mainnet
+        self.data.mainnet()
     }
 
     /// Check whether the wallet supports devnet cluster
     pub fn devnet(&self) -> bool {
-        self.supported_chains.devnet
+        self.data.devnet()
     }
 
     /// Check whether the wallet supports testnet cluster
     pub fn testnet(&self) -> bool {
-        self.supported_chains.testnet
+        self.data.testnet()
     }
 
     /// Check whether the wallet supports localnet cluster
     pub fn localnet(&self) -> bool {
-        self.supported_chains.localnet
+        self.data.localnet()
     }
 
     /// Check whether the wallet supports `standard:connect` feature
     pub fn standard_connect(&self) -> bool {
-        self.supported_features.connect
+        self.data.standard_connect()
     }
 
     /// Check whether the wallet supports `standard:disconnect` feature
     pub fn standard_disconnect(&self) -> bool {
-        self.supported_features.disconnect
+        self.data.standard_disconnect()
     }
 
     /// Check whether the wallet supports `standard:events` feature
     pub fn standard_events(&self) -> bool {
-        self.supported_features.events
+        self.data.standard_events()
     }
 
     /// Check whether the wallet supports `solana:signIn` feature
     pub fn solana_signin(&self) -> bool {
-        self.supported_features.sign_in
+        self.data.solana_signin()
     }
 
     /// Check whether the wallet supports `solana:signMessage` feature
     pub fn solana_sign_message(&self) -> bool {
-        self.supported_features.sign_message
+        self.data.solana_sign_message()
     }
 
     /// Check whether the wallet supports `solana:signAndSendTransaction` feature
     pub fn solana_sign_and_send_transaction(&self) -> bool {
-        self.supported_features.sign_and_send_tx
+        self.data.solana_sign_and_send_transaction()
     }
 
     /// Check whether the wallet supports `solana:signTransaction` feature
     pub fn solana_sign_transaction(&self) -> bool {
-        self.supported_features.sign_tx
+        self.data.solana_sign_transaction()
     }
 
-    /// Get the optional [wallet icon](WalletIcon)
-    pub fn icon(&self) -> Option<&WalletIcon> {
-        self.icon.as_ref()
+    /// Get the optional wallet icon
+    pub fn icon(&self) -> Option<&Cow<'static, str>> {
+        self.data.icon()
     }
 
     /// Get the name of the wallet
     pub fn name(&self) -> &str {
-        &self.name
+        self.data.name()
     }
 
     /// Get the version of the wallet standard that the wallet supports
-    pub fn version(&self) -> &SemverVersion {
-        &self.version
-    }
-}
+    pub fn version(&self) -> SemverVersion {
+        let version = self.data.version();
 
-impl core::fmt::Debug for Wallet {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let chains = self
-            .chains
-            .iter()
-            .map(|cluster| cluster.chain())
-            .collect::<Vec<&str>>();
-
-        f.debug_struct("Wallet")
-            .field("name", &self.name)
-            .field("version", &self.version)
-            .field("icon", &self.icon)
-            .field("accounts", &self.accounts)
-            .field("chains", &chains)
-            .field("features", &self.features)
-            .finish()
-    }
-}
-
-impl PartialOrd for Wallet {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for Wallet {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.name
-            .as_bytes()
-            .cmp(other.name.as_bytes())
-            .then(self.version.cmp(&other.version))
-    }
-}
-
-impl core::hash::Hash for Wallet {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.name.as_bytes().hash(state);
-        self.version.hash(state);
+        SemverVersion(version.clone())
     }
 }

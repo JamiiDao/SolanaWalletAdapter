@@ -1,0 +1,113 @@
+name: Build wallet-adapter-common
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  license-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          arguments: --exclude-unpublished --exclude-dev
+
+  typo-check:
+    name: Spell Check with Typos
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Actions Repository
+        uses: actions/checkout@v4
+
+      - name: Writes changes in the local checkout
+        uses: crate-ci/typos@master
+        with:
+          write_changes: false
+
+  run-formatter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run formatter
+        run: cargo fmt --all -- --config format_code_in_doc_comments=true --check
+
+  run-clippy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run cargo clippy and error on warnings
+        run: cargo clippy -p wallet-adapter-common -- -D warnings
+
+  build-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run cargo clippy and error on warnings
+        run: cargo doc -p wallet-adapter-common --all-features
+  build:
+    name: Build
+    strategy:
+      matrix:
+        include:
+          - target: aarch64-pc-windows-msvc
+            os: windows-2022
+          - target: x86_64-pc-windows-msvc
+            os: windows-2022
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-22.04
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-22.04
+          - target: x86_64-apple-darwin
+            os: macos-13
+          - target: x86_64-apple-darwin
+            os: macos-latest
+          - target: aarch64-apple-darwin
+            os: macos-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install cargo-semver-checks
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-semver-checks@0.34
+      - uses: Swatinem/rust-cache@v2
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install Browser wasm32 target
+        run: rustup target add wasm32-unknown-unknown
+      - name: Build
+        run: cargo build -p wallet-adapter-common --all-features
+
+  test:
+    name: Test
+    strategy:
+      matrix:
+        include:
+          - target: aarch64-pc-windows-msvc
+            os: windows-2022
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-22.04
+          - target: x86_64-apple-darwin
+            os: macos-13
+          - target: x86_64-pc-windows-msvc
+            os: windows-2022
+          - target: x86_64-apple-darwin
+            os: macos-13
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install Browser wasm32 target
+        run: rustup target add wasm32-unknown-unknown
+      - name: Build
+        run: cargo build -p wallet-adapter-common --all-features

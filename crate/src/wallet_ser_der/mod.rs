@@ -2,10 +2,7 @@ mod version;
 pub use version::*;
 
 mod wallet_icon;
-pub use wallet_icon::*;
-
-mod chains;
-pub use chains::*;
+pub(crate) use wallet_icon::*;
 
 mod wallet;
 pub use wallet::*;

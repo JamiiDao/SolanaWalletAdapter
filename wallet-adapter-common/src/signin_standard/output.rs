@@ -1,10 +1,10 @@
-use crate::WalletAccount;
+use crate::WalletAccountData;
 
 /// The output of Sign In With Solana (SIWS) response from a wallet
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone)]
 pub struct SignInOutput {
-    /// A [An Account](WalletAccount)
-    pub account: WalletAccount,
+    /// A [An Account](WalletAccountData)
+    pub account: WalletAccountData,
     /// The UTF-8 encoded message
     pub message: String,
     /// The signature as a  byte array of 64 bytes in length corresponding to a
