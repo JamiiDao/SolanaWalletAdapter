@@ -1,8 +1,9 @@
+use wallet_adapter_common::{signin_standard::SignInOutput, WalletCommonUtils};
 use web_sys::{js_sys, wasm_bindgen::JsValue};
 
 use crate::{
-    Reflection, SemverVersion, SignInOutput, SigninInput, StandardFunction, WalletAccount,
-    WalletError, WalletResult,
+    Reflection, SemverVersion, SigninInput, StandardFunction, WalletAccount, WalletError,
+    WalletResult,
 };
 
 /// A `solana:signin` struct containing the `version` and `callback`
@@ -34,8 +35,8 @@ impl SignIn {
         let output_array = Reflection::new(value)?.get_array()?;
 
         let first_index = Reflection::new(output_array.get(0))?;
-        let account = first_index.reflect_inner("account")?;
-        let account = WalletAccount::parse(Reflection::new(account)?)?;
+        let wallet_account = first_index.reflect_inner("account")?;
+        let wallet_account = WalletAccount::parse(Reflection::new(wallet_account)?)?;
 
         let message_value = first_index.reflect_inner("signedMessage")?;
         let message_bytes = Reflection::new(message_value)?.into_bytes()?;
@@ -46,7 +47,7 @@ impl SignIn {
                 stack: "INTERNAL_ERROR".to_string(),
             })?;
 
-        signin_input.check_eq(message)?;
+        signin_input.0.check_eq(message)?;
 
         let signature_value = first_index.reflect_inner("signature")?;
         let signature_bytes: [u8; 64] = Reflection::new(signature_value)?
@@ -54,10 +55,10 @@ impl SignIn {
             .try_into()
             .or(Err(WalletError::InvalidEd25519SignatureBytes))?;
 
-        SigninInput::verify(public_key, &message_bytes, signature_bytes)?;
+        WalletCommonUtils::verify(&public_key, &message_bytes, &signature_bytes)?;
 
         Ok(SignInOutput {
-            account,
+            account: wallet_account.account,
             message: message.to_string(),
             signature: signature_bytes,
             public_key,

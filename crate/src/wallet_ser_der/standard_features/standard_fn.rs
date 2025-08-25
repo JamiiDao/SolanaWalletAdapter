@@ -14,8 +14,8 @@ pub struct StandardFunction {
 }
 
 impl StandardFunction {
-    /// Parse the [semver version](SemverVersion) and the [callback function](js_sys::Function)
-    /// given a [web_sys::js_sys::JsValue], a [key](str) and a [namespace](str) . The namespace is either
+    /// Parse the [semver version](SemverVersion) and the [callback function](Function)
+    /// given a [web_sys::wasm_bindgen::JsValue], a [key](str) and a [namespace](str) . The namespace is either
     /// `standard:` or `solana:` as defined by the wallet standard
     pub(crate) fn new(
         reflection: &Reflection,
@@ -41,6 +41,7 @@ impl StandardFunction {
     }
 }
 
+#[allow(clippy::non_canonical_partial_ord_impl)]
 impl PartialOrd for StandardFunction {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.version.cmp(&other.version))

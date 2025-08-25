@@ -2,31 +2,28 @@ use std::borrow::Cow;
 
 use crate::{Reflection, WalletError, WalletResult};
 
+use wallet_adapter_common::SemverVersion as SemverVersionData;
 /// Semver Versioning struct
-#[derive(Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct SemverVersion {
-    major: u8,
-    minor: u8,
-    patch: u8,
-}
+#[derive(Debug, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct SemverVersion(pub SemverVersionData);
 
 impl SemverVersion {
     /// The major version
     pub fn major(&self) -> u8 {
-        self.major
+        self.0.major()
     }
 
     /// The minor version
     pub fn minor(&self) -> u8 {
-        self.minor
+        self.0.minor()
     }
 
     /// The patch version
     pub fn patch(&self) -> u8 {
-        self.patch
+        self.0.patch()
     }
 
-    /// Parse the version from a [JsValue]
+    /// Parse the version from a [web_sys::wasm_bindgen::JsValue]
     pub(crate) fn from_jsvalue(reflection: &Reflection) -> WalletResult<Self> {
         let version = reflection
             .reflect_inner("version")
@@ -56,36 +53,22 @@ impl SemverVersion {
             })
             .collect::<WalletResult<Vec<u8>>>()?;
 
-        Ok(Self {
-            major: version_chunks[0],
-            minor: version_chunks[1],
-            patch: version_chunks[2],
-        })
+        Ok(Self(
+            SemverVersionData::new()
+                .set_major(version_chunks[0])
+                .set_minor(version_chunks[1])
+                .set_patch(version_chunks[2]),
+        ))
     }
 
     /// Get the string version of [Self] in the format `major.minor.patch`
-    pub fn stringify_version(&self) -> Cow<str> {
-        Cow::Borrowed("")
-            + Cow::Owned(self.major.to_string())
-            + "."
-            + Cow::Owned(self.minor.to_string())
-            + "."
-            + Cow::Owned(self.minor.to_string())
-    }
-}
-
-impl core::fmt::Debug for SemverVersion {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "SemverVersion({}.{}.{})",
-            self.major, self.minor, self.patch
-        )
+    pub fn stringify_version<'a>(&'a self) -> Cow<'a, str> {
+        self.0.stringify_version()
     }
 }
 
 impl core::fmt::Display for SemverVersion {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}.{}.{}", self.major, self.minor, self.patch)
+        write!(f, "{}", self.0)
     }
 }

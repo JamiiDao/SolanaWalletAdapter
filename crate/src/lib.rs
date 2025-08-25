@@ -15,19 +15,23 @@ mod commitment;
 pub use commitment::*;
 
 mod utils;
-pub use utils::*;
+pub(crate) use utils::*;
 
 mod events;
 pub use events::*;
-
-mod constants;
-pub use constants::*;
 
 mod wallet_ser_der;
 pub use wallet_ser_der::*;
 
 mod storage;
 pub use storage::*;
+
+// Re-export common crate
+pub use wallet_adapter_common::chains::*;
+pub use wallet_adapter_common::clusters::*;
+pub use wallet_adapter_common::feature_support::*;
+pub use wallet_adapter_common::standardized_events::*;
+pub use wallet_adapter_common::WalletCommonUtils as Utils;
 
 // Re-export of crates
 pub use async_channel;

@@ -1,12 +1,6 @@
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime};
 
-use web_sys::{
-    js_sys::{self, Array},
-    wasm_bindgen::JsValue,
-    Window,
-};
-
-use crate::{Cluster, Reflection, Utils, WalletError, WalletResult};
+use crate::{clusters::Cluster, WalletCommonUtils, WalletUtilsError, WalletUtilsResult};
 
 /// The Sign In input used as parameters when performing
 /// `SignInWithSolana (SIWS)` requests as defined by the
@@ -79,20 +73,7 @@ impl SigninInput {
 
     /// An EIP-4361 domain requesting the sign-in.
     /// If not provided, the wallet must determine the domain to include in the message.
-    /// Sets the domain name by fetching the details from [window.location().host()](web_sys::Location) .
-    pub fn set_domain(&mut self, window: &Window) -> WalletResult<&mut Self> {
-        let host = window.location().host()?;
-
-        self.domain.replace(host);
-
-        Ok(self)
-    }
-
-    /// An EIP-4361 domain requesting the sign-in.
-    /// If not provided, the wallet must determine the domain to include in the message.
-    /// Sets a custom domain name instead of fetching from
-    /// [window.location().host()](web_sys::Location)
-    pub fn set_custom_domain(&mut self, domain: &str) -> &mut Self {
+    pub fn set_domain(&mut self, domain: &str) -> &mut Self {
         self.domain.replace(domain.to_string());
 
         self
@@ -102,17 +83,16 @@ impl SigninInput {
     /// NOTE: Some wallets require this field or
     /// an error `MessageResponseMismatch` which is as
     /// a result of the sent message not corresponding with the signed message
-    pub fn set_address(&mut self, address: &str) -> WalletResult<&mut Self> {
+    pub fn set_address(&mut self, address: &str) -> WalletUtilsResult<&mut Self> {
         let mut buffer = [0u8; 32];
         bs58::decode(address)
             .onto(&mut buffer)
-            .or(Err(WalletError::InvalidBase58Address))?;
+            .or(Err(WalletUtilsError::InvalidBase58Address))?;
 
         self.address.replace(address.to_string());
 
         Ok(self)
     }
-
     ///  An EIP-4361 Statement which is a human readable string and should not have new-line characters (\n).
     /// Sets the message that is shown to the user during Sign In With Solana
     pub fn set_statement(&mut self, statement: &str) -> &mut Self {
@@ -125,10 +105,10 @@ impl SigninInput {
     /// since if it is not the same, the wallet will ignore it and
     /// show the user an error.
     /// This is the URL that is requesting the sign-in.
-    pub fn set_uri(&mut self, window: &Window) -> WalletResult<&mut Self> {
-        self.uri.replace(window.location().href()?);
+    pub fn set_uri(&mut self, uri: &str) -> &mut Self {
+        self.uri.replace(uri.to_string());
 
-        Ok(self)
+        self
     }
 
     /// An EIP-4361 version.
@@ -167,36 +147,17 @@ impl SigninInput {
         self
     }
 
-    ///  An EIP-4361 Nonce which is an alphanumeric string containing a minimum of 8 characters.
+    /// An EIP-4361 Nonce which is an alphanumeric string containing a minimum of 8 characters.
     /// This is generated from the Cryptographically Secure Random Number Generator
     /// and the bytes converted to hex formatted string.
-    pub fn custom_nonce(&mut self, nonce: &str) -> WalletResult<&mut Self> {
+    pub fn set_custom_nonce(&mut self, nonce: &str) -> WalletUtilsResult<&mut Self> {
         if nonce.len() < 8 {
-            return Err(WalletError::NonceMustBeAtLeast8Characters);
+            return Err(WalletUtilsError::NonceMustBeAtLeast8Characters);
         }
+
         self.nonce.replace(nonce.to_string());
 
         Ok(self)
-    }
-
-    /// Fetches the time from [JavaScript Date Now](js_sys::Date::now()) .
-    /// This is converted to [SystemTime]
-    pub fn time_now() -> WalletResult<SystemTime> {
-        let date_now = js_sys::Date::now() as u64;
-
-        UNIX_EPOCH
-            .checked_add(Duration::from_millis(date_now))
-            .ok_or(WalletError::JsError {
-                name: "UNIX_EPOCH.checked_add(js_sys::Date::now()".to_string(),
-                message: "Unable to get the current time".to_string(),
-                stack: "INTERNAL ERROR".to_string(),
-            })
-    }
-
-    /// Converts [SystemTime] to ISO 8601 datetime string as required by
-    /// Sign In With Solana standard
-    pub fn to_iso860(system_time: SystemTime) -> humantime::Rfc3339Timestamp {
-        humantime::format_rfc3339_millis(system_time)
     }
 
     ///  This represents the time at which the sign-in request was issued to the wallet.
@@ -204,63 +165,68 @@ impl SigninInput {
     /// from the timestamp at which verification is taking place.
     /// If not provided, the wallet does not include Issued At in the message.
     /// This also follows the ISO 8601 datetime.
-    pub fn set_issued_at(&mut self) -> WalletResult<&mut Self> {
-        self.issued_at.replace(Self::time_now()?);
+    pub fn set_issued_at(&mut self, time: SystemTime) -> &mut Self {
+        self.issued_at.replace(time);
 
-        Ok(self)
+        self
     }
 
     /// An ergonomic method for [Self::set_expiration_time()]
     /// where you can add milliseconds and [SystemTime] is automatically calculated for you
     pub fn set_expiration_time_millis(
         &mut self,
+        now: SystemTime,
         expiration_time_milliseconds: u64,
-    ) -> WalletResult<&mut Self> {
+    ) -> WalletUtilsResult<&mut Self> {
         let duration = Duration::from_millis(expiration_time_milliseconds);
 
-        self.set_expiry_internal(duration)
+        self.set_expiry_internal(now, duration)
     }
 
     /// An ergonomic method for [Self::set_expiration_time()]
     /// where you can add seconds and [SystemTime] is automatically calculated for you
     pub fn set_expiration_time_seconds(
         &mut self,
+        now: SystemTime,
         expiration_time_seconds: u64,
-    ) -> WalletResult<&mut Self> {
+    ) -> WalletUtilsResult<&mut Self> {
         let duration = Duration::from_secs(expiration_time_seconds);
 
-        self.set_expiry_internal(duration)
+        self.set_expiry_internal(now, duration)
     }
 
-    fn set_expiry_internal(&mut self, duration: Duration) -> WalletResult<&mut Self> {
+    fn set_expiry_internal(
+        &mut self,
+        now: SystemTime,
+        duration: Duration,
+    ) -> WalletUtilsResult<&mut Self> {
         let expiry_time = if let Some(issued_time) = self.issued_at {
             issued_time
                 .checked_add(duration)
-                .ok_or(WalletError::JsError {
-                    name: "SystemTime".to_string(),
-                    message: "SystemTime::checked_add(expiration_time_milliseconds) overflow"
-                        .to_string(),
-                    stack: "INTERNAL ERROR".to_string(),
-                })?
+                .ok_or(WalletUtilsError::SystemTimeCheckedAddOverflow)?
         } else {
-            Self::time_now()?
+            now
         };
 
-        self.set_expiration_time(expiry_time)
+        self.set_expiration_time(now, expiry_time)
     }
 
     /// An ISO 8601 datetime string. This represents the time at which the sign-in request should expire.
     /// If not provided, the wallet does not include Expiration Time in the message.
     /// Expiration time should be in future or an error will be thrown even before a request to the wallet is sent
-    pub fn set_expiration_time(&mut self, expiration_time: SystemTime) -> WalletResult<&mut Self> {
+    pub fn set_expiration_time(
+        &mut self,
+        now: SystemTime,
+        expiration_time: SystemTime,
+    ) -> WalletUtilsResult<&mut Self> {
         if let Some(issued_at) = self.issued_at {
             if issued_at > expiration_time {
-                return Err(WalletError::ExpiryTimeEarlierThanIssuedTime);
+                return Err(WalletUtilsError::ExpiryTimeEarlierThanIssuedTime);
             }
         }
 
-        if Self::time_now()? > expiration_time {
-            return Err(WalletError::ExpirationTimeIsInThePast);
+        if now > expiration_time {
+            return Err(WalletUtilsError::ExpirationTimeIsInThePast);
         }
 
         self.expiration_time.replace(expiration_time);
@@ -268,63 +234,68 @@ impl SigninInput {
         Ok(self)
     }
 
-    fn set_not_before_internal(&mut self, duration: Duration) -> WalletResult<&mut Self> {
+    fn set_not_before_internal(
+        &mut self,
+        now: SystemTime,
+        duration: Duration,
+    ) -> WalletUtilsResult<&mut Self> {
         let not_before = if let Some(issued_time) = self.issued_at {
             issued_time
                 .checked_add(duration)
-                .ok_or(WalletError::JsError {
-                    name: "SystemTime".to_string(),
-                    message: "SystemTime::checked_add(not_before_time_milliseconds) overflow"
-                        .to_string(),
-                    stack: "INTERNAL ERROR".to_string(),
-                })?
+                .ok_or(WalletUtilsError::SystemTimeCheckedAddOverflow)?
         } else {
-            Self::time_now()?
+            now
         };
 
-        self.set_not_before_time(not_before)
+        self.set_not_before_time(now, not_before)
     }
 
     /// An ergonomic method for [Self::set_not_before_time()]
     /// where you can add milliseconds and [SystemTime] is automatically calculated for you
     pub fn set_not_before_time_millis(
         &mut self,
+        now: SystemTime,
         expiration_time_milliseconds: u64,
-    ) -> WalletResult<&mut Self> {
+    ) -> WalletUtilsResult<&mut Self> {
         let duration = Duration::from_millis(expiration_time_milliseconds);
 
-        self.set_not_before_internal(duration)
+        self.set_not_before_internal(now, duration)
     }
 
     /// An ergonomic method for [Self::set_not_before_time()]
     /// where you can add seconds and [SystemTime] is automatically calculated for you
     pub fn set_not_before_time_seconds(
         &mut self,
+        now: SystemTime,
         expiration_time_seconds: u64,
-    ) -> WalletResult<&mut Self> {
+    ) -> WalletUtilsResult<&mut Self> {
         let duration = Duration::from_secs(expiration_time_seconds);
 
-        self.set_not_before_internal(duration)
+        self.set_not_before_internal(now, duration)
     }
 
     /// An ISO 8601 datetime string.
     /// This represents the time at which the sign-in request becomes valid.
     /// If not provided, the wallet does not include Not Before in the message.
     /// Time must be after `IssuedTime`
-    pub fn set_not_before_time(&mut self, not_before: SystemTime) -> WalletResult<&mut Self> {
+    pub fn set_not_before_time(
+        &mut self,
+        now: SystemTime,
+        not_before: SystemTime,
+    ) -> WalletUtilsResult<&mut Self> {
         if let Some(issued_at) = self.issued_at {
             if issued_at > not_before {
-                return Err(WalletError::NotBeforeTimeEarlierThanIssuedTime);
+                return Err(WalletUtilsError::NotBeforeTimeEarlierThanIssuedTime);
             }
         }
 
-        if Self::time_now()? > not_before {
-            return Err(WalletError::NotBeforeTimeIsInThePast);
+        if now > not_before {
+            return Err(WalletUtilsError::NotBeforeTimeIsInThePast);
         }
 
         if let Some(expiration_time) = self.expiration_time {
             if not_before > expiration_time {
-                return Err(WalletError::NotBeforeTimeLaterThanExpirationTime);
+                return Err(WalletUtilsError::NotBeforeTimeLaterThanExpirationTime);
             }
         }
 
@@ -333,48 +304,8 @@ impl SigninInput {
         Ok(self)
     }
 
-    /// Converts [Self] to a [JsValue] to pass to the wallet where it's internal representation
-    /// is a [js_sys::Object]
-    pub fn get_object(&self) -> WalletResult<JsValue> {
-        let mut signin_input_object = Reflection::new_object();
-
-        signin_input_object.set_object_string_optional("domain", self.domain.as_ref())?;
-        signin_input_object.set_object_string_optional("address", self.address.as_ref())?;
-        signin_input_object.set_object_string_optional("statement", self.statement.as_ref())?;
-        signin_input_object.set_object_string_optional("uri", self.uri.as_ref())?;
-        signin_input_object.set_object_string_optional("version", self.version.as_ref())?;
-        signin_input_object.set_object_string_optional("address", self.address.as_ref())?;
-        signin_input_object.set_object_string_optional(
-            "chainId",
-            self.chain_id
-                .as_ref()
-                .map(|cluster| cluster.chain().to_string())
-                .as_ref(),
-        )?;
-        signin_input_object.set_object_string_optional("nonce", self.nonce.as_ref())?;
-        signin_input_object
-            .set_object_string_optional("issuedAt", self.issued_at_iso8601().as_ref())?;
-        signin_input_object.set_object_string_optional(
-            "expirationTime",
-            self.expiration_time_iso8601().as_ref(),
-        )?;
-        signin_input_object
-            .set_object_string_optional("notBefore", self.not_before_iso8601().as_ref())?;
-        signin_input_object.set_object_string_optional("requestId", self.request_id.as_ref())?;
-
-        if !self.resources.is_empty() {
-            let stringify_resources = Array::new();
-            self.resources.iter().for_each(|resource| {
-                stringify_resources.push(&resource.into());
-            });
-            signin_input_object.set_object(&"resources".into(), &stringify_resources)?;
-        }
-
-        Ok(signin_input_object.take())
-    }
-
     /// Parses the Sign In With Solana (SIWS) result of the Response from a wallet
-    pub fn parser(input: &str) -> WalletResult<Self> {
+    pub fn parser(input: &str) -> WalletUtilsResult<Self> {
         let mut signin_input = Self::default();
 
         input
@@ -387,12 +318,13 @@ impl SigninInput {
                 .map(|(_left, right)| right.trim().to_string())
         };
 
-        let split_colon_system_time = |value: &str| -> WalletResult<Option<SystemTime>> {
+        let split_colon_system_time = |value: &str| -> WalletUtilsResult<Option<SystemTime>> {
             value
                 .split_once(":")
                 .map(|(_left, right)| {
-                    humantime::parse_rfc3339(right.trim())
-                        .or(Err(WalletError::InvalidISO8601Timestamp(right.to_string())))
+                    humantime::parse_rfc3339(right.trim()).or(Err(
+                        WalletUtilsError::InvalidISO8601Timestamp(right.to_string()),
+                    ))
                 })
                 .transpose()
         };
@@ -419,7 +351,7 @@ impl SigninInput {
 
                 if input.contains("Chain ID") {
                     if let Some((_left, right)) = input.split_once(":") {
-                        let cluster: Cluster = right.trim().try_into()?;
+                        let cluster: Cluster = right.trim().into();
 
                         signin_input.chain_id.replace(cluster);
                     }
@@ -450,7 +382,7 @@ impl SigninInput {
                     }
                 }
 
-                Ok::<(), WalletError>(())
+                Ok::<(), WalletUtilsError>(())
             })?;
 
         Ok(signin_input)
@@ -458,28 +390,14 @@ impl SigninInput {
 
     /// Checks if the response of a Sign In With Solana (SIWS) from the Wallet is the same as the
     /// request data sent to the wallet to be signed
-    pub fn check_eq(&self, other: &str) -> WalletResult<()> {
-        let other = Self::parser(other)?;
+    pub fn check_eq(&self, other: &str) -> WalletUtilsResult<()> {
+        let other = SigninInput::parser(other)?;
 
         if self.eq(&other) {
             Ok(())
         } else {
-            Err(WalletError::MessageResponseMismatch)
+            Err(WalletUtilsError::MessageResponseMismatch)
         }
-    }
-
-    /// Verifies that the signature of the signed message is correct by ensuring the
-    /// [message](str) and [PublicKey](ed25519_dalek::VerifyingKey) match and that the [PublicKey](ed25519_dalek::VerifyingKey)
-    /// signed a valid [message](str)
-    pub fn verify(
-        public_key_bytes: [u8; 32],
-        message: &[u8],
-        signature_bytes: [u8; 64],
-    ) -> WalletResult<()> {
-        let public_key = Utils::public_key(public_key_bytes)?;
-        let signature = Utils::signature(signature_bytes);
-
-        Utils::verify_signature(public_key, message, signature)
     }
 
     /// An EIP-4361 Request ID.
@@ -566,19 +484,19 @@ impl SigninInput {
     /// Get the `issued_at` field as ISO8601 date time string
     pub fn issued_at_iso8601(&self) -> Option<String> {
         self.issued_at
-            .map(|time_exists| Self::to_iso860(time_exists).to_string())
+            .map(|time_exists| WalletCommonUtils::to_iso860(time_exists).to_string())
     }
 
     /// Get the `expiration_time` field as ISO8601 date time string
     pub fn expiration_time_iso8601(&self) -> Option<String> {
         self.expiration_time
-            .map(|time_exists| Self::to_iso860(time_exists).to_string())
+            .map(|time_exists| WalletCommonUtils::to_iso860(time_exists).to_string())
     }
 
     /// Get the `not_before` field as ISO8601 date time string
     pub fn not_before_iso8601(&self) -> Option<String> {
         self.not_before
-            .map(|time_exists| Self::to_iso860(time_exists).to_string())
+            .map(|time_exists| WalletCommonUtils::to_iso860(time_exists).to_string())
     }
 
     /// Get the `request_id` field

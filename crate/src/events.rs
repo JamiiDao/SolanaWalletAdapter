@@ -1,6 +1,9 @@
 use std::rc::Rc;
 
 use async_channel::{Receiver, Sender};
+use wallet_adapter_common::standardized_events::{
+    WINDOW_APP_READY_EVENT_TYPE, WINDOW_REGISTER_WALLET_EVENT_TYPE,
+};
 use web_sys::{
     js_sys::{Object, Reflect},
     wasm_bindgen::{prelude::Closure, JsValue},
@@ -8,8 +11,8 @@ use web_sys::{
 };
 
 use crate::{
-    Reflection, StorageType, Utils, Wallet, WalletAccount, WalletAdapter, WalletError,
-    WalletResult, WINDOW_APP_READY_EVENT_TYPE,
+    InnerUtils, Reflection, StorageType, Wallet, WalletAccount, WalletAdapter, WalletError,
+    WalletResult,
 };
 
 /// The `Sender` part of an [async_channel::bounded] channel
@@ -64,7 +67,7 @@ impl<'a> InitEvents<'a> {
                 .detail()).unwrap().into_function()
                 .expect("Unable to get the `detail` function from the `Event` object. This is a fatal error as the register handler won't execute.");
 
-            Utils::jsvalue_to_error(detail.call1(
+            InnerUtils::jsvalue_to_error(detail.call1(
                 &JsValue::null(),
                 &Self::register_object(inner_storage.clone()),
             ))
@@ -76,10 +79,8 @@ impl<'a> InitEvents<'a> {
             .into_function()
             .unwrap();
 
-        self.window.add_event_listener_with_callback(
-            crate::WINDOW_REGISTER_WALLET_EVENT_TYPE,
-            &listener_fn,
-        )?;
+        self.window
+            .add_event_listener_with_callback(WINDOW_REGISTER_WALLET_EVENT_TYPE, &listener_fn)?;
 
         Ok(())
     }

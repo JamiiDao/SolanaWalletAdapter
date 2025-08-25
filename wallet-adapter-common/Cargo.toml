@@ -1,0 +1,22 @@
+[package]
+name = "wallet-adapter-common"
+version.workspace = true
+authors.workspace = true
+description.workspace = true
+homepage.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+license.workspace = true
+repository.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+bs58.workspace = true
+ed25519-dalek.workspace = true
+humantime.workspace = true
+rand_chacha.workspace = true
+rand_core.workspace = true
+thiserror.workspace = true
+blake3.workspace = true
