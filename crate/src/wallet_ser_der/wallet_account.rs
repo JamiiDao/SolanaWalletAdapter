@@ -171,6 +171,61 @@ impl WalletAccount {
             js_value: reflection.take(),
         })
     }
+
+    /// Checks if MainNet is supported
+    pub fn mainnet(&self) -> bool {
+        self.account.supported_chains.mainnet
+    }
+
+    /// Checks if DevNet is supported
+    pub fn devnet(&self) -> bool {
+        self.account.supported_chains.devnet
+    }
+
+    /// Checks if TestNet is supported
+    pub fn testnet(&self) -> bool {
+        self.account.supported_chains.testnet
+    }
+
+    /// Checks if LocalNet is supported
+    pub fn localnet(&self) -> bool {
+        self.account.supported_chains.localnet
+    }
+
+    /// Checks if `standard:connect` is supported
+    pub fn standard_connect(&self) -> bool {
+        self.account.supported_features.connect
+    }
+
+    /// Checks if `standard:disconnect` is supported
+    pub fn standard_disconnect(&self) -> bool {
+        self.account.supported_features.disconnect
+    }
+
+    /// Checks if `standard:events` is supported
+    pub fn standard_events(&self) -> bool {
+        self.account.supported_features.events
+    }
+
+    /// Checks if `solana:signIn` is supported
+    pub fn solana_signin(&self) -> bool {
+        self.account.supported_features.sign_in
+    }
+
+    /// Checks if `solana:signMessage` is supported
+    pub fn solana_sign_message(&self) -> bool {
+        self.account.supported_features.sign_message
+    }
+
+    /// Checks if `solana:signAndSendTransaction` is supported
+    pub fn solana_sign_and_send_transaction(&self) -> bool {
+        self.account.supported_features.sign_and_send_tx
+    }
+
+    /// Checks if `solana:signTransaction` is supported
+    pub fn solana_sign_transaction(&self) -> bool {
+        self.account.supported_features.sign_tx
+    }
 }
 
 impl core::fmt::Debug for WalletAccount {
