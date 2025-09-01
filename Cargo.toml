@@ -1,5 +1,5 @@
 [workspace]
-members = ["crate", "partial-idl-parser", "wallet-adapter-common"]
+members = [ "base","crate", "partial-idl-parser", "wallet-adapter-common"]
 resolver = "2"
 
 [workspace.package]
