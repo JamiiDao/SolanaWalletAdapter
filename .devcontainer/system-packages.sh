@@ -1,1 +1,0 @@
-sudo apt-get update && sudo apt-get install -y ripgrep bash curl libssl-dev pkg-config jq git clang
