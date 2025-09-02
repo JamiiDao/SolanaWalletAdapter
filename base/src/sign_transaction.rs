@@ -11,7 +11,7 @@ pub trait SignTransactionOutput {
     fn signed_transaction(&self) -> &[u8];
 
     fn verify_signed_transaction<OutputError: core::error::Error>(&self)
-    -> Result<(), OutputError>;
+        -> Result<(), OutputError>;
 }
 
 /// Input should be the same as [SignTransactionInput]

@@ -2,46 +2,45 @@ name: Mdbook build
 
 on:
   push:
-    branches: ["master"]
-  pull_request:
-    branches: [ master ]
+    branches:
+      - master
 
 jobs:
   build:
     name: build
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # To push a branch 
-      pull-requests: write  # To create a PR from that branch
+      contents: write # To push a branch
+      pull-requests: write # To create a PR from that branch
     env:
-      MDBOOK_VERSION: '0.4.45'
+      MDBOOK_VERSION: "0.4.45"
       # MDBOOK_MERMAID_VERSION: '0.13.0'
     steps:
-    - uses: actions/checkout@v4
-      with:
-        submodules: false
-    - name: Install mdbook
-      env:
-        GH_TOKEN: ${{ github.token }}
-      run: |
-        mkdir ~/tools
-        curl -L https://github.com/rust-lang/mdBook/releases/download/v$MDBOOK_VERSION/mdbook-v$MDBOOK_VERSION-x86_64-unknown-linux-gnu.tar.gz | tar xz -C ~/tools
-        # curl -L https://github.com/badboy/mdbook-mermaid/releases/download/v$MDBOOK_MERMAID_VERSION/mdbook-mermaid-v$MDBOOK_MERMAID_VERSION-x86_64-unknown-linux-gnu.tar.gz | tar xz -C ~/tools
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+      - name: Install mdbook
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir ~/tools
+          curl -L https://github.com/rust-lang/mdBook/releases/download/v$MDBOOK_VERSION/mdbook-v$MDBOOK_VERSION-x86_64-unknown-linux-gnu.tar.gz | tar xz -C ~/tools
+          # curl -L https://github.com/badboy/mdbook-mermaid/releases/download/v$MDBOOK_MERMAID_VERSION/mdbook-mermaid-v$MDBOOK_MERMAID_VERSION-x86_64-unknown-linux-gnu.tar.gz | tar xz -C ~/tools
 
-        gh release download -R Michael-F-Bryan/mdbook-linkcheck -p mdbook-linkcheck.x86_64-unknown-linux-gnu.zip
-        unzip mdbook-linkcheck.x86_64-unknown-linux-gnu.zip -d ~/tools
-        chmod +x ~/tools/mdbook-linkcheck
+          gh release download -R Michael-F-Bryan/mdbook-linkcheck -p mdbook-linkcheck.x86_64-unknown-linux-gnu.zip
+          unzip mdbook-linkcheck.x86_64-unknown-linux-gnu.zip -d ~/tools
+          chmod +x ~/tools/mdbook-linkcheck
 
-        gh release download -R zjp-CN/mdbook-theme -p mdbook-theme_linux.tar.gz
-        tar -xzf mdbook-theme_linux.tar.gz -C ~/tools
-        echo ~/tools >> $GITHUB_PATH
-    - name: Build 
-      run: mdbook build wallet-adapter-book
+          gh release download -R zjp-CN/mdbook-theme -p mdbook-theme_linux.tar.gz
+          tar -xzf mdbook-theme_linux.tar.gz -C ~/tools
+          echo ~/tools >> $GITHUB_PATH
+      - name: Build
+        run: mdbook build wallet-adapter-book
 
-    - name: Upload pages artifacts
-      uses: actions/upload-pages-artifact@v3
-      with:
-        path: wallet-adapter-book/book
+      - name: Upload pages artifacts
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: wallet-adapter-book/book
 
   # Deploy job
   deploy:
@@ -50,8 +49,8 @@ jobs:
 
     # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
     permissions:
-      pages: write      # to deploy to Pages
-      id-token: write   # to verify the deployment originates from an appropriate source
+      pages: write # to deploy to Pages
+      id-token: write # to verify the deployment originates from an appropriate source
 
     # Deploy to the github-pages environment
     environment:
