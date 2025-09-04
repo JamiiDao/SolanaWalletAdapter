@@ -6,6 +6,8 @@ pub trait Cluster: fmt::Debug + PartialEq + Eq + PartialOrd + Ord + Hash + Clone
     fn chain(&self) -> &str;
 
     fn endpoint(&self) -> &str;
+
+    fn chains() -> &'static [&'static str];
 }
 
 pub trait ClusterEnabled {
