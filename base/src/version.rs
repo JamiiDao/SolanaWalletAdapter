@@ -79,3 +79,13 @@ impl core::fmt::Display for SemverVersion {
         write!(f, "{}.{}.{}", self.major, self.minor, self.patch)
     }
 }
+
+pub trait Version {
+    fn version(&self) -> SemverVersion {
+        SemverVersion {
+            major: 1,
+            minor: 0,
+            patch: 0,
+        }
+    }
+}
