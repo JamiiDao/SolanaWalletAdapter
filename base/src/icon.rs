@@ -9,6 +9,30 @@ pub struct WalletStandardIcon {
 }
 
 impl WalletStandardIcon {
+    pub fn new(bytes: &'static [u8], mime: WalletStandardIconMime) -> Self {
+        Self { bytes, mime }
+    }
+
+    pub fn new_svg(bytes: &'static [u8]) -> Self {
+        Self::new(bytes, WalletStandardIconMime::Svg)
+    }
+
+    pub fn new_gif(bytes: &'static [u8]) -> Self {
+        Self::new(bytes, WalletStandardIconMime::Gif)
+    }
+
+    pub fn new_webp(bytes: &'static [u8]) -> Self {
+        Self::new(bytes, WalletStandardIconMime::Webp)
+    }
+
+    pub fn new_png(bytes: &'static [u8]) -> Self {
+        Self::new(bytes, WalletStandardIconMime::Png)
+    }
+
+    pub fn new_jpeg(bytes: &'static [u8]) -> Self {
+        Self::new(bytes, WalletStandardIconMime::Jpeg)
+    }
+
     pub fn base64<'wa>(&'wa self) -> Cow<'wa, str> {
         let encoded = Base64::encode_string(self.bytes);
 
@@ -22,6 +46,7 @@ pub enum WalletStandardIconMime {
     Png,
     Webp,
     Gif,
+    Jpeg,
 }
 
 impl WalletStandardIconMime {
@@ -31,6 +56,7 @@ impl WalletStandardIconMime {
             Self::Gif => "gif",
             Self::Png => "png",
             Self::Webp => "webp",
+            Self::Jpeg => "jpeg",
         }
     }
 }
