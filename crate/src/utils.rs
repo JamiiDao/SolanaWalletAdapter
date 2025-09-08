@@ -129,6 +129,14 @@ impl Reflection {
     }
 
     /// Reflect the `key` from the value of [Self](Reflection) and return the
+    /// reflected value as a [String]
+    pub fn string_optional(&self, key: &str) -> WalletResult<Option<String>> {
+        let name = Reflect::get(&self.0, &key.into())?;
+
+        Ok(name.as_string())
+    }
+
+    /// Reflect the `key` from the value of [Self](Reflection) and return the
     /// reflected value as a [Vec of Vec of bytes](Vec<Vec<u8>>)
     pub fn get_bytes_from_vec(&self, key: &str) -> WalletResult<Vec<Vec<u8>>> {
         let js_array = self.get_array()?;
@@ -197,13 +205,13 @@ impl Reflection {
 
     /// Reflect the `key` from the value of [Self](Reflection) and return the
     /// reflected value as a [Vec of String](Vec<String>)
-    pub fn vec_string(&self, key: &str) -> WalletResult<Vec<String>> {
+    pub fn vec_string_accept_undefined(&self, key: &str) -> WalletResult<Vec<String>> {
         let to_js_array = self.reflect_js_array(key)?;
 
-        to_js_array
+        Ok(to_js_array
             .iter()
-            .map(|value| Self::get_string(&value))
-            .collect::<WalletResult<Vec<String>>>()
+            .filter_map(|value| Self::get_string(&value).ok())
+            .collect::<Vec<String>>())
     }
 
     /// Reflect the `key` from the value of [Self](Reflection) and return the
