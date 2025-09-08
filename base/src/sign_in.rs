@@ -44,15 +44,15 @@ pub struct SignInInput<'wa> {
     /// Note: For Phantom, issuedAt has a threshold and it should be
     /// within +- 10 minutes from the timestamp at which verification is taking place.
     /// If not provided, the wallet does not include Issued At in the message.
-    issued_at: Option<SystemTime>,
+    issued_at: Option<Cow<'wa, str>>,
     /// Optional ISO 8601 datetime string.
     /// This represents the time at which the sign-in request should expire.
     /// If not provided, the wallet does not include Expiration Time in the message.
-    expiration_time: Option<SystemTime>,
+    expiration_time: Option<Cow<'wa, str>>,
     /// Optional ISO 8601 datetime string.
     /// This represents the time at which the sign-in request becomes valid.
     /// If not provided, the wallet does not include Not Before in the message.
-    not_before: Option<SystemTime>,
+    not_before: Option<Cow<'wa, str>>,
     /// Optional EIP-4361 Request ID.
     /// In addition to using nonce to avoid replay attacks,
     /// dapps can also choose to include a unique signature in the requestId .
@@ -173,7 +173,9 @@ impl<'wa> SignInInput<'wa> {
     /// If not provided, the wallet does not include Issued At in the message.
     /// This also follows the ISO 8601 datetime.
     pub fn set_issued_at(&mut self, time: SystemTime) -> &mut Self {
-        self.issued_at.replace(time);
+        self.issued_at.replace(Cow::Owned(
+            humantime::format_rfc3339_millis(time).to_string(),
+        ));
 
         self
     }
@@ -207,7 +209,10 @@ impl<'wa> SignInInput<'wa> {
         now: SystemTime,
         duration: Duration,
     ) -> WalletBaseResult<'wa, &'wa mut Self> {
-        let expiry_time = if let Some(issued_time) = self.issued_at {
+        let expiry_time = if let Some(issued_time) = self.issued_at.as_ref() {
+            let issued_time = humantime::parse_rfc3339(issued_time).or(Err(
+                WalletBaseError::InvalidISO8601Timestamp(issued_time.clone()),
+            ))?;
             issued_time
                 .checked_add(duration)
                 .ok_or(WalletBaseError::SystemTimeCheckedAddOverflow)?
@@ -226,7 +231,11 @@ impl<'wa> SignInInput<'wa> {
         now: SystemTime,
         expiration_time: SystemTime,
     ) -> WalletBaseResult<'wa, &'wa mut Self> {
-        if let Some(issued_at) = self.issued_at {
+        if let Some(issued_at) = self.issued_at.as_ref() {
+            let issued_at = humantime::parse_rfc3339(issued_at).or(Err(
+                WalletBaseError::InvalidISO8601Timestamp(issued_at.clone()),
+            ))?;
+
             if issued_at > expiration_time {
                 let issued = BaseUtils::to_iso860(issued_at).to_string();
                 let expiry = BaseUtils::to_iso860(expiration_time).to_string();
@@ -247,7 +256,9 @@ impl<'wa> SignInInput<'wa> {
             });
         }
 
-        self.expiration_time.replace(expiration_time);
+        self.expiration_time.replace(Cow::Owned(
+            humantime::format_rfc3339_millis(expiration_time).to_string(),
+        ));
 
         Ok(self)
     }
@@ -257,7 +268,11 @@ impl<'wa> SignInInput<'wa> {
         now: SystemTime,
         duration: Duration,
     ) -> WalletBaseResult<'wa, &'wa mut Self> {
-        let not_before = if let Some(issued_time) = self.issued_at {
+        let not_before = if let Some(issued_time) = self.issued_at.as_ref() {
+            let issued_time = humantime::parse_rfc3339(issued_time).or(Err(
+                WalletBaseError::InvalidISO8601Timestamp(issued_time.clone()),
+            ))?;
+
             issued_time
                 .checked_add(duration)
                 .ok_or(WalletBaseError::SystemTimeCheckedAddOverflow)?
@@ -301,7 +316,11 @@ impl<'wa> SignInInput<'wa> {
         now: SystemTime,
         not_before: SystemTime,
     ) -> WalletBaseResult<'wa, &mut Self> {
-        if let Some(issued_at) = self.issued_at {
+        if let Some(issued_at) = self.issued_at.as_ref() {
+            let issued_at = humantime::parse_rfc3339(issued_at).or(Err(
+                WalletBaseError::InvalidISO8601Timestamp(issued_at.clone()),
+            ))?;
+
             if issued_at > not_before {
                 let issued = BaseUtils::to_iso860(issued_at).to_string();
                 let not_before = BaseUtils::to_iso860(not_before).to_string();
@@ -322,11 +341,14 @@ impl<'wa> SignInInput<'wa> {
             });
         }
 
-        if let Some(expiration_time) = self.expiration_time {
+        if let Some(expiration_time) = self.expiration_time.as_ref() {
+            let expiration_time = humantime::parse_rfc3339(expiration_time).or(Err(
+                WalletBaseError::InvalidISO8601Timestamp(expiration_time.clone()),
+            ))?;
+
             if not_before > expiration_time {
                 let expiry = BaseUtils::to_iso860(expiration_time).to_string();
                 let not_before = BaseUtils::to_iso860(not_before).to_string();
-                // TODO add a check for this in the build()
                 return Err(WalletBaseError::NotBeforeTimeLaterThanExpirationTime {
                     not_before: not_before.into(),
                     expiry: expiry.into(),
@@ -334,7 +356,9 @@ impl<'wa> SignInInput<'wa> {
             }
         }
 
-        self.not_before.replace(not_before);
+        self.not_before.replace(Cow::Owned(
+            humantime::format_rfc3339_millis(not_before).to_string(),
+        ));
 
         Ok(self)
     }
@@ -353,12 +377,13 @@ impl<'wa> SignInInput<'wa> {
                 .map(|(_left, right)| Cow::Owned(right.trim().into()))
         };
 
-        let split_colon_system_time = |value: &'wa str| -> WalletBaseResult<Option<SystemTime>> {
+        let split_colon_system_time = |value: &'wa str| -> WalletBaseResult<Option<Cow<'wa, str>>> {
             value
                 .split_once(":")
                 .map(|(_left, right)| {
                     humantime::parse_rfc3339(right.trim())
-                        .or(Err(WalletBaseError::InvalidISO8601Timestamp(right.into())))
+                        .or(Err(WalletBaseError::InvalidISO8601Timestamp(right.into())))?;
+                    Ok(Cow::Borrowed(right))
                 })
                 .transpose()
         };
@@ -508,36 +533,39 @@ impl<'wa> SignInInput<'wa> {
     }
 
     /// Get the `issued_at` field
-    pub fn issued_at(&self) -> Option<&SystemTime> {
+    pub fn issued_at(&self) -> Option<&Cow<'wa, str>> {
         self.issued_at.as_ref()
     }
 
     /// Get the `expiration_time` field
-    pub fn expiration_time(&self) -> Option<&SystemTime> {
+    pub fn expiration_time(&self) -> Option<&Cow<'wa, str>> {
         self.expiration_time.as_ref()
     }
 
     /// Get the `not_before` field
-    pub fn not_before(&self) -> Option<&SystemTime> {
+    pub fn not_before(&self) -> Option<&Cow<'wa, str>> {
         self.not_before.as_ref()
     }
 
-    /// Get the `issued_at` field as ISO8601 date time string
-    pub fn issued_at_iso8601(&self) -> Option<String> {
+    /// Get the `issued_at` field
+    pub fn issued_at_system_time(&self) -> Option<SystemTime> {
         self.issued_at
-            .map(|time_exists| BaseUtils::to_iso860(time_exists).to_string())
+            .as_ref()
+            .map(|value| humantime::parse_rfc3339(value).ok())?
     }
 
-    /// Get the `expiration_time` field as ISO8601 date time string
-    pub fn expiration_time_iso8601(&self) -> Option<String> {
+    /// Get the `expiration_time` field
+    pub fn expiration_time_system_time(&self) -> Option<SystemTime> {
         self.expiration_time
-            .map(|time_exists| BaseUtils::to_iso860(time_exists).to_string())
+            .as_ref()
+            .map(|value| humantime::parse_rfc3339(value).ok())?
     }
 
-    /// Get the `not_before` field as ISO8601 date time string
-    pub fn not_before_iso8601(&self) -> Option<String> {
+    /// Get the `not_before` field
+    pub fn not_before_system_time(&self) -> Option<SystemTime> {
         self.not_before
-            .map(|time_exists| BaseUtils::to_iso860(time_exists).to_string())
+            .as_ref()
+            .map(|value| humantime::parse_rfc3339(value).ok())?
     }
 
     /// Get the `request_id` field
