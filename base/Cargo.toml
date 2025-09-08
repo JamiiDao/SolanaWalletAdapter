@@ -1,6 +1,6 @@
 [package]
 name = "wallet-standard-base"
-version = "0.1.4"
+version = "0.1.5"
 authors.workspace = true
 description = "The base features required by wallet-standard"
 homepage.workspace = true
