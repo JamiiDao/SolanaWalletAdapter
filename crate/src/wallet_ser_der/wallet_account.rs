@@ -98,8 +98,8 @@ impl WalletAccount {
     pub(crate) fn parse(reflection: Reflection) -> WalletResult<Self> {
         let address = reflection.string("address")?;
         let public_key = reflection.byte32array("publicKey")?;
-        let chains = reflection.vec_string("chains")?;
-        let features = reflection.vec_string("features")?;
+        let chains = reflection.vec_string_accept_undefined("chains")?;
+        let features = reflection.vec_string_accept_undefined("features")?;
 
         let mut supported_chains = ChainSupport::default();
 

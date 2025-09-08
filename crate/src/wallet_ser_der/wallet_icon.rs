@@ -6,8 +6,8 @@ pub(crate) struct WalletIcon;
 impl WalletIcon {
     /// Parse the wallet from a [web_sys::wasm_bindgen::JsValue]
     pub(crate) fn from_jsvalue(reflection: &Reflection) -> WalletResult<Option<String>> {
-        let icon = match reflection.string("icon") {
-            Ok(icon) => Option::Some(icon),
+        let icon = match reflection.string_optional("icon") {
+            Ok(icon) => icon,
             Err(error) => match error {
                 WalletError::InternalError(_) => Option::None,
                 _ => {
