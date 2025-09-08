@@ -66,7 +66,7 @@ pub struct SignInInput<'wa> {
     /// These URIs should be separated by \n-, ie,
     /// URIs in new lines starting with the character -.
     /// If not provided, the wallet does not include Resources in the message.
-    resources: Cow<'wa, [&'wa str]>,
+    resources: Cow<'wa, [Cow<'wa, str>]>,
 }
 
 impl<'wa> SignInInput<'wa> {
@@ -77,8 +77,8 @@ impl<'wa> SignInInput<'wa> {
 
     /// An EIP-4361 domain requesting the sign-in.
     /// If not provided, the wallet must determine the domain to include in the message.
-    pub fn set_domain(&mut self, domain: &'wa str) -> &mut Self {
-        self.domain.replace(Cow::Borrowed(domain));
+    pub fn set_domain(&mut self, domain: &str) -> &mut Self {
+        self.domain.replace(Cow::Owned(domain.to_string()));
 
         self
     }
@@ -87,10 +87,10 @@ impl<'wa> SignInInput<'wa> {
     /// NOTE: Some wallets require this field or
     /// an error `MessageResponseMismatch` is returned which is as
     /// a result of the sent message not corresponding with the signed message
-    pub fn set_address(&'wa mut self, address: &'wa str) -> WalletBaseResult<'wa, &'wa mut Self> {
+    pub fn set_address(&'wa mut self, address: &str) -> WalletBaseResult<'wa, &'wa mut Self> {
         let mut buffer = [0u8; 32];
         let buffer_written_len = bs58::decode(address).onto(&mut buffer).or(Err(
-            WalletBaseError::InvalidBase58Address(Cow::Borrowed(address)),
+            WalletBaseError::InvalidBase58Address(Cow::Owned(address.to_string())),
         ))?;
 
         if buffer_written_len != 32 {
@@ -99,14 +99,14 @@ impl<'wa> SignInInput<'wa> {
             ));
         }
 
-        self.address.replace(Cow::Borrowed(address));
+        self.address.replace(Cow::Owned(address.to_string()));
 
         Ok(self)
     }
     ///  An EIP-4361 Statement which is a human readable string and should not have new-line characters (\n).
     /// Sets the message that is shown to the user during Sign In With Solana
-    pub fn set_statement(&mut self, statement: &'wa str) -> &mut Self {
-        self.statement.replace(Cow::Borrowed(statement));
+    pub fn set_statement(&mut self, statement: &str) -> &mut Self {
+        self.statement.replace(Cow::Owned(statement.to_string()));
 
         self
     }
@@ -115,16 +115,16 @@ impl<'wa> SignInInput<'wa> {
     /// since if it is not the same, the wallet will ignore it and
     /// show the user an error.
     /// This is the URL that is requesting the sign-in.
-    pub fn set_uri(&mut self, uri: &'wa str) -> &mut Self {
-        self.uri.replace(Cow::Borrowed(uri));
+    pub fn set_uri(&mut self, uri: &str) -> &mut Self {
+        self.uri.replace(Cow::Owned(uri.to_string()));
 
         self
     }
 
     /// An EIP-4361 version.
     /// Sets the version
-    pub fn set_version(&mut self, version: &'wa str) -> &mut Self {
-        self.version.replace(Cow::Borrowed(version));
+    pub fn set_version(&mut self, version: &str) -> &mut Self {
+        self.version.replace(Cow::Owned(version.to_string()));
 
         self
     }
@@ -154,10 +154,7 @@ impl<'wa> SignInInput<'wa> {
     /// An EIP-4361 Nonce which is an alphanumeric string containing a minimum of 8 characters.
     /// This is generated from the Cryptographically Secure Random Number Generator
     /// and the bytes converted to hex formatted string.
-    pub fn set_custom_nonce(
-        &'wa mut self,
-        nonce: &'wa str,
-    ) -> WalletBaseResult<'wa, &'wa mut Self> {
+    pub fn set_custom_nonce(&'wa mut self, nonce: &str) -> WalletBaseResult<'wa, &'wa mut Self> {
         let nonce_length = nonce.len();
         if nonce_length < 8 {
             return Err(WalletBaseError::NonceMustBeAtLeast8Characters(
@@ -165,7 +162,7 @@ impl<'wa> SignInInput<'wa> {
             ));
         }
 
-        self.nonce.replace(Cow::Borrowed(nonce));
+        self.nonce.replace(Cow::Owned(nonce.to_string()));
 
         Ok(self)
     }
@@ -415,7 +412,10 @@ impl<'wa> SignInInput<'wa> {
 
                 if input.starts_with("-") {
                     if let Some(value) = input.split("-").nth(1) {
-                        signin_input.resources.to_mut().push(value.trim());
+                        signin_input
+                            .resources
+                            .to_mut()
+                            .push(Cow::Borrowed(value.trim()));
                     }
                 }
 
@@ -443,8 +443,8 @@ impl<'wa> SignInInput<'wa> {
     /// Once the wallet returns the signed message,
     /// dapps can then verify this signature against the state to add an additional,
     /// strong layer of security. If not provided, the wallet must not include Request ID in the message.
-    pub fn set_request_id(&mut self, id: &'wa str) -> &mut Self {
-        self.request_id.replace(id.into());
+    pub fn set_request_id(&mut self, id: &str) -> &mut Self {
+        self.request_id.replace(Cow::Owned(id.into()));
 
         self
     }
@@ -453,15 +453,21 @@ impl<'wa> SignInInput<'wa> {
     /// Usually a list of references in the form of URIs that the dapp wants the user to be aware of.
     /// These URIs should be separated by \n-, ie, URIs in new lines starting with the character -.
     /// If not provided, the wallet must not include Resources in the message.
-    pub fn add_resource(&mut self, resource: &'wa str) -> &mut Self {
-        self.resources.to_mut().push(resource);
+    pub fn add_resource(&mut self, resource: &str) -> &mut Self {
+        self.resources
+            .to_mut()
+            .push(Cow::Owned(resource.to_string()));
 
         self
     }
 
     /// Helper for [Self::add_resource()] when you want to add multiple resources at the same time
-    pub fn add_resources(&mut self, resources: &'wa [&'wa str]) -> &mut Self {
-        self.resources.to_mut().extend_from_slice(resources);
+    pub fn add_resources(&mut self, resources: &[&str]) -> &mut Self {
+        resources.iter().for_each(|resource| {
+            self.resources
+                .to_mut()
+                .push(Cow::Owned(resource.to_string()))
+        });
 
         self
     }
@@ -540,7 +546,7 @@ impl<'wa> SignInInput<'wa> {
     }
 
     /// Get the `resources` field
-    pub fn resources(&'wa self) -> &'wa [&'wa str] {
+    pub fn resources(&'wa self) -> &'wa [Cow<'wa, str>] {
         &self.resources
     }
 }
