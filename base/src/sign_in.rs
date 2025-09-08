@@ -69,7 +69,7 @@ pub struct SignInInput<'wa> {
     resources: Cow<'wa, [Cow<'wa, str>]>,
 }
 
-impl<'wa> SignInInput<'wa> {
+impl<'wa> SignInInput<'_> {
     /// Same as `Self::default()` as it initializes [Self] with default values
     pub fn new() -> Self {
         Self::default()
@@ -87,7 +87,7 @@ impl<'wa> SignInInput<'wa> {
     /// NOTE: Some wallets require this field or
     /// an error `MessageResponseMismatch` is returned which is as
     /// a result of the sent message not corresponding with the signed message
-    pub fn set_address(&'wa mut self, address: &str) -> WalletBaseResult<'wa, &'wa mut Self> {
+    pub fn set_address(&'_ mut self, address: &str) -> WalletBaseResult<'_, &'_ mut Self> {
         let mut buffer = [0u8; 32];
         let buffer_written_len = bs58::decode(address).onto(&mut buffer).or(Err(
             WalletBaseError::InvalidBase58Address(Cow::Owned(address.to_string())),
@@ -154,7 +154,7 @@ impl<'wa> SignInInput<'wa> {
     /// An EIP-4361 Nonce which is an alphanumeric string containing a minimum of 8 characters.
     /// This is generated from the Cryptographically Secure Random Number Generator
     /// and the bytes converted to hex formatted string.
-    pub fn set_custom_nonce(&'wa mut self, nonce: &str) -> WalletBaseResult<'wa, &'wa mut Self> {
+    pub fn set_custom_nonce(&'_ mut self, nonce: &str) -> WalletBaseResult<'_, &'_ mut Self> {
         let nonce_length = nonce.len();
         if nonce_length < 8 {
             return Err(WalletBaseError::NonceMustBeAtLeast8Characters(
@@ -183,10 +183,10 @@ impl<'wa> SignInInput<'wa> {
     /// An ergonomic method for [Self::set_expiration_time()]
     /// where you can add milliseconds and [SystemTime] is automatically calculated for you
     pub fn set_expiration_time_millis(
-        &'wa mut self,
+        &'_ mut self,
         now: SystemTime,
         expiration_time_milliseconds: u64,
-    ) -> WalletBaseResult<'wa, &'wa mut Self> {
+    ) -> WalletBaseResult<'_, &'_ mut Self> {
         let duration = Duration::from_millis(expiration_time_milliseconds);
 
         self.set_expiry_internal(now, duration)
@@ -195,20 +195,20 @@ impl<'wa> SignInInput<'wa> {
     /// An ergonomic method for [Self::set_expiration_time()]
     /// where you can add seconds and [SystemTime] is automatically calculated for you
     pub fn set_expiration_time_seconds(
-        &'wa mut self,
+        &'_ mut self,
         now: SystemTime,
         expiration_time_seconds: u64,
-    ) -> WalletBaseResult<'wa, &'wa mut Self> {
+    ) -> WalletBaseResult<'_, &'_ mut Self> {
         let duration = Duration::from_secs(expiration_time_seconds);
 
         self.set_expiry_internal(now, duration)
     }
 
     fn set_expiry_internal(
-        &'wa mut self,
+        &'_ mut self,
         now: SystemTime,
         duration: Duration,
-    ) -> WalletBaseResult<'wa, &'wa mut Self> {
+    ) -> WalletBaseResult<'_, &'_ mut Self> {
         let expiry_time = if let Some(issued_time) = self.issued_at.as_ref() {
             let issued_time = humantime::parse_rfc3339(issued_time).or(Err(
                 WalletBaseError::InvalidISO8601Timestamp(issued_time.clone()),
@@ -227,10 +227,10 @@ impl<'wa> SignInInput<'wa> {
     /// If not provided, the wallet does not include Expiration Time in the message.
     /// Expiration time should be in future or an error will be thrown even before a request to the wallet is sent
     pub fn set_expiration_time(
-        &'wa mut self,
+        &'_ mut self,
         now: SystemTime,
         expiration_time: SystemTime,
-    ) -> WalletBaseResult<'wa, &'wa mut Self> {
+    ) -> WalletBaseResult<'_, &'_ mut Self> {
         if let Some(issued_at) = self.issued_at.as_ref() {
             let issued_at = humantime::parse_rfc3339(issued_at).or(Err(
                 WalletBaseError::InvalidISO8601Timestamp(issued_at.clone()),
@@ -264,10 +264,10 @@ impl<'wa> SignInInput<'wa> {
     }
 
     fn set_not_before_internal(
-        &'wa mut self,
+        &'_ mut self,
         now: SystemTime,
         duration: Duration,
-    ) -> WalletBaseResult<'wa, &'wa mut Self> {
+    ) -> WalletBaseResult<'_, &'_ mut Self> {
         let not_before = if let Some(issued_time) = self.issued_at.as_ref() {
             let issued_time = humantime::parse_rfc3339(issued_time).or(Err(
                 WalletBaseError::InvalidISO8601Timestamp(issued_time.clone()),
@@ -286,10 +286,10 @@ impl<'wa> SignInInput<'wa> {
     /// An ergonomic method for [Self::set_not_before_time()]
     /// where you can add milliseconds and [SystemTime] is automatically calculated for you
     pub fn set_not_before_time_millis(
-        &'wa mut self,
+        &'_ mut self,
         now: SystemTime,
         expiration_time_milliseconds: u64,
-    ) -> WalletBaseResult<'wa, &'wa mut Self> {
+    ) -> WalletBaseResult<'_, &'_ mut Self> {
         let duration = Duration::from_millis(expiration_time_milliseconds);
 
         self.set_not_before_internal(now, duration)
@@ -298,10 +298,10 @@ impl<'wa> SignInInput<'wa> {
     /// An ergonomic method for [Self::set_not_before_time()]
     /// where you can add seconds and [SystemTime] is automatically calculated for you
     pub fn set_not_before_time_seconds(
-        &'wa mut self,
+        &'_ mut self,
         now: SystemTime,
         expiration_time_seconds: u64,
-    ) -> WalletBaseResult<'wa, &'wa mut Self> {
+    ) -> WalletBaseResult<'_, &'_ mut Self> {
         let duration = Duration::from_secs(expiration_time_seconds);
 
         self.set_not_before_internal(now, duration)
@@ -312,10 +312,10 @@ impl<'wa> SignInInput<'wa> {
     /// If not provided, the wallet does not include Not Before in the message.
     /// Time must be after `IssuedTime`
     pub fn set_not_before_time(
-        &mut self,
+        &'_ mut self,
         now: SystemTime,
         not_before: SystemTime,
-    ) -> WalletBaseResult<'wa, &mut Self> {
+    ) -> WalletBaseResult<'_, &'_ mut Self> {
         if let Some(issued_at) = self.issued_at.as_ref() {
             let issued_at = humantime::parse_rfc3339(issued_at).or(Err(
                 WalletBaseError::InvalidISO8601Timestamp(issued_at.clone()),
@@ -364,26 +364,27 @@ impl<'wa> SignInInput<'wa> {
     }
 
     /// Parses the Sign In With Solana (SIWS) result of the Response from a wallet
-    pub fn parser(input: &'wa str) -> WalletBaseResult<'wa, Self> {
-        let mut signin_input = Self::default();
+    pub fn parser(input: &'wa str) -> WalletBaseResult<'wa, SignInInput<'wa>> {
+        let mut signin_input = SignInInput::default();
 
         input
             .split_once(" ")
             .map(|(left, _right)| signin_input.domain.replace(left.trim().into()));
 
-        let split_colon = |value: &str| {
+        let split_colon = |value: &str| -> Option<Cow<'_, str>> {
             value
                 .split_once(":")
-                .map(|(_left, right)| Cow::Owned(right.trim().into()))
+                .map(|(_left, right)| Cow::Owned(right.trim().to_string()))
         };
 
-        let split_colon_system_time = |value: &'wa str| -> WalletBaseResult<Option<Cow<'wa, str>>> {
+        let split_colon_system_time = |value: &str| -> WalletBaseResult<Option<Cow<'_, str>>> {
             value
                 .split_once(":")
                 .map(|(_left, right)| {
-                    humantime::parse_rfc3339(right.trim())
-                        .or(Err(WalletBaseError::InvalidISO8601Timestamp(right.into())))?;
-                    Ok(Cow::Borrowed(right))
+                    humantime::parse_rfc3339(right.trim()).or(Err(
+                        WalletBaseError::InvalidISO8601Timestamp(right.to_string().into()),
+                    ))?;
+                    Ok(Cow::Owned(right.to_string()))
                 })
                 .transpose()
         };
@@ -440,7 +441,7 @@ impl<'wa> SignInInput<'wa> {
                         signin_input
                             .resources
                             .to_mut()
-                            .push(Cow::Borrowed(value.trim()));
+                            .push(Cow::Owned(value.trim().to_string()));
                     }
                 }
 
@@ -452,10 +453,8 @@ impl<'wa> SignInInput<'wa> {
 
     /// Checks if the response of a Sign In With Solana (SIWS) from the Wallet is the same as the
     /// request data sent to the wallet to be signed
-    pub fn check_eq(&'wa self, other: &'wa str) -> WalletBaseResult<'wa, ()> {
-        let other = Self::parser(other)?;
-
-        if self.eq(&other) {
+    pub fn check_eq(&'_ self, other: &'_ Self) -> WalletBaseResult<'_, ()> {
+        if self.eq(other) {
             Ok(())
         } else {
             Err(WalletBaseError::MessageResponseMismatch)
@@ -533,17 +532,17 @@ impl<'wa> SignInInput<'wa> {
     }
 
     /// Get the `issued_at` field
-    pub fn issued_at(&self) -> Option<&Cow<'wa, str>> {
+    pub fn issued_at(&self) -> Option<&Cow<'_, str>> {
         self.issued_at.as_ref()
     }
 
     /// Get the `expiration_time` field
-    pub fn expiration_time(&self) -> Option<&Cow<'wa, str>> {
+    pub fn expiration_time(&self) -> Option<&Cow<'_, str>> {
         self.expiration_time.as_ref()
     }
 
     /// Get the `not_before` field
-    pub fn not_before(&self) -> Option<&Cow<'wa, str>> {
+    pub fn not_before(&self) -> Option<&Cow<'_, str>> {
         self.not_before.as_ref()
     }
 
