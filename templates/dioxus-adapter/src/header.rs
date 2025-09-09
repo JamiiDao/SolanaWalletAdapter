@@ -213,8 +213,9 @@ fn NavWalletItem(
     let compute_wallet = || {
         if let Ok(connected_account) = ACTIVE_CONNECTION.read().connected_account() {
             let shortened_address = connected_account.shorten_address().unwrap();
+            let address = connected_account.address();
 
-            rsx! { ActiveAccountDropDown{show_modal, shortened_address, show_mobile_close_button} }
+            rsx! { ActiveAccountDropDown{show_modal, shortened_address, address, show_mobile_close_button} }
         } else {
             rsx! {
                 div {class:"flex w-full items-center justify-center",
@@ -247,7 +248,7 @@ fn NavWalletItem(
 }
 
 #[component]
-pub fn ActiveAccountDropDown(show_modal: Signal<bool>, shortened_address: String, show_mobile_close_button: Signal<bool>) -> Element {
+pub fn ActiveAccountDropDown(show_modal: Signal<bool>, address: String, shortened_address: String, show_mobile_close_button: Signal<bool>) -> Element {
     let mut show_dropdown = use_signal(|| false);
 
     let disconnect_callback = move || {
@@ -258,7 +259,7 @@ pub fn ActiveAccountDropDown(show_modal: Signal<bool>, shortened_address: String
         });
     };
 
-    let clone_address = shortened_address.clone();
+    let clone_address = address.clone();
 
     let copy_callback = move || {
         let inner_address = clone_address.clone();
