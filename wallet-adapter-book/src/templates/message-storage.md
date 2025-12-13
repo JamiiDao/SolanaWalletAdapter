@@ -28,7 +28,7 @@ use crate::NotificationInfo;
 // Create a new notification.
 // It takes a generic types that ensures it can accept
 // anything that implements `std::fmt::Display`.
-// This default of 2 seconds for the notitication to be displayed to the user. 
+// This default of 2 seconds for the notification to be displayed to the user. 
 // This method also generates a cryptographically secure unique identifier for the message
 // that allows various rust frontend frameworks to perform DOM diffing.
 let notification = NotificationInfo::new("Hello");
