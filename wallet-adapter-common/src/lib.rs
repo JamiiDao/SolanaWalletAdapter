@@ -33,6 +33,16 @@ pub mod chains;
 /// Cluster identifiers for Solana `wallet-adapter` standard
 pub mod clusters;
 
+// Re-export
+pub use blake3;
+pub use bs58;
+pub use ed25519_dalek;
+pub use getrandom;
+pub use humantime;
+pub use rand_chacha;
+pub use rand_core;
+pub use thiserror;
+
 #[cfg(test)]
 mod chain_tests {
     use super::clusters::*;

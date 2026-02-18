@@ -27,6 +27,7 @@ rand_chacha = { workspace = true, optional = true, default-features = false }
 rand_core = { workspace = true, optional = true }
 blake3 = { workspace = true, default-features = false, optional = true }
 humantime = { workspace = true, default-features = false, optional = true }
+getrandom = { workspace = true, features = ["wasm_js", "sys_rng"] }
 
 [target.'cfg(not(target_arch = "aarch64"))'.dependencies]
 zeroize = { workspace = true, default-features = false, optional = true }

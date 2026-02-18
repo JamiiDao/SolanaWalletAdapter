@@ -10,10 +10,12 @@ impl<const N: usize> RandomBytes<N> {
     }
 
     pub fn generate_with_buffer(buffer: &mut [u8; N]) {
+        use getrandom::SysRng;
+
         use rand_chacha::ChaCha12Rng;
         use rand_core::{Rng, SeedableRng};
 
-        let mut rng = ChaCha12Rng::from_seed(Default::default());
+        let mut rng = ChaCha12Rng::try_from_rng(&mut SysRng).unwrap();
 
         rng.fill_bytes(buffer);
     }
