@@ -7,10 +7,12 @@ use web_sys::{
 
 use core::hash::Hash;
 
-use crate::{Commitment, Reflection, SemverVersion, WalletAccount, WalletError, WalletResult};
+use crate::{
+    noop, Commitment, Reflection, SemverVersion, WalletAccount, WalletError, WalletResult,
+};
 
 /// Used in `solana:SignTransaction` and `solana:SignAndSendTransaction`.
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SignTransaction {
     /// The [semver version](SemverVersion) of the
     /// callback function supported by the wallet
@@ -23,6 +25,17 @@ pub struct SignTransaction {
     // Internally called. Can be either `solana:signTransaction`
     // or `solana:signAndSendTransaction` callback function
     callback: Function,
+}
+
+impl Default for SignTransaction {
+    fn default() -> Self {
+        Self {
+            version: SemverVersion::default(),
+            legacy: false,
+            version_zero: false,
+            callback: noop(),
+        }
+    }
 }
 
 impl SignTransaction {

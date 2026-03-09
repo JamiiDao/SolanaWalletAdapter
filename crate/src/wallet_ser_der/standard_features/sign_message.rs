@@ -134,7 +134,7 @@ impl SignedMessageOutput<'_> {
 impl Default for SignedMessageOutput<'_> {
     fn default() -> Self {
         Self {
-            message: &[],
+            message: [].as_slice(),
             public_key: [0u8; 32],
             signature: [0u8; 64],
         }
