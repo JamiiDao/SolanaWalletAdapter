@@ -1,3 +1,4 @@
+use solana_signature::Signature;
 use wallet_adapter_common::WalletCommonUtils;
 use web_sys::{
     js_sys::{self, Array, Function, Object, Reflect},
@@ -21,11 +22,8 @@ impl InnerUtils {
         }
     }
 
-    /// Convert a [JsValue] to a [ed25519_dalek::Signature]
-    pub fn jsvalue_to_signature(
-        value: JsValue,
-        namespace: &str,
-    ) -> WalletResult<ed25519_dalek::Signature> {
+    /// Convert a [JsValue] to a [solana_signature::Signature]
+    pub fn jsvalue_to_signature(value: JsValue, namespace: &str) -> WalletResult<Signature> {
         let in_case_of_error = Err(WalletError::InternalError(format!(
             "{namespace}: `{value:?}` cannot be cast to a Uint8Array, only a JsValue of bytes can be cast."
         )));

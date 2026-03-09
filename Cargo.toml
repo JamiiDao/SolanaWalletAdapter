@@ -24,6 +24,7 @@ ed25519-dalek = { version = "2.2.0", default-features = false, features = [
     "signature",
     "fast",
 ] }
+solana-signature = { version = "3.3", features = ["verify"] }
 async-channel = "2.5.0"
 log = "0.4"
 wasm-bindgen-futures = "0.4"
