@@ -1,4 +1,4 @@
-use ed25519_dalek::Signature;
+use solana_signature::Signature;
 use wallet_adapter_common::{clusters::Cluster, WalletCommonUtils};
 use web_sys::{
     js_sys::{self, Function},

@@ -8,7 +8,7 @@ pub struct SignInOutput {
     /// The UTF-8 encoded message
     pub message: String,
     /// The signature as a  byte array of 64 bytes in length corresponding to a
-    /// [Ed25519 Signature](ed25519_dalek::Signature)
+    /// [Ed25519 Signature](solana_signature::Signature)
     pub signature: [u8; 64],
     /// The public key as a  byte array of 32 bytes in length corresponding to a
     /// [Ed25519 Public Key](ed25519_dalek::VerifyingKey)

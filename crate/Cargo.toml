@@ -26,6 +26,7 @@ blake3.workspace = true
 async-lock.workspace = true
 wallet-adapter-common.workspace = true
 ed25519-dalek.workspace = true
+solana-signature.workspace = true
 
 [dev-dependencies]
 solana-sdk = "4.0.1"

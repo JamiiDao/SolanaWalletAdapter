@@ -1,4 +1,5 @@
-use ed25519_dalek::{Signature, VerifyingKey};
+use ed25519_dalek::VerifyingKey;
+use solana_signature::Signature;
 use wallet_adapter_common::WalletCommonUtils;
 use web_sys::{js_sys, wasm_bindgen::JsValue};
 
@@ -84,7 +85,7 @@ impl SignMessage {
             Ok(SignedMessageOutput {
                 message,
                 public_key: wallet_account.account.public_key,
-                signature: signature.to_bytes(),
+                signature: signature.into(),
             })
         } else {
             Err(WalletError::ReceivedAnEmptySignedMessagesArray)
