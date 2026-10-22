@@ -20,6 +20,8 @@ pub struct SignTransaction {
     pub legacy: bool,
     /// Whether the wallet supports signing versioned transactions
     pub version_zero: bool,
+    /// Whether the wallet supports signing version one transactions
+    pub version_one: bool,
     // Internally called. Can be either `solana:signTransaction`
     // or `solana:signAndSendTransaction` callback function
     callback: Function,
@@ -36,13 +38,14 @@ impl SignTransaction {
                 WalletError::InternalError(format!("Namespace[`solana:{key}`]: {error}"))
             })?;
 
-        let (legacy, version_zero) = Self::get_tx_version_support(reflection)?;
+        let (legacy, version_zero, version_one) = Self::get_tx_version_support(reflection)?;
 
         Ok(Self {
             version,
             callback,
             legacy,
             version_zero,
+            version_one,
         })
     }
 
@@ -62,7 +65,7 @@ impl SignTransaction {
         Self::new(reflection, version, "signAndSendTransaction")
     }
 
-    fn get_tx_version_support(inner_value: &Reflection) -> WalletResult<(bool, bool)> {
+    fn get_tx_version_support(inner_value: &Reflection) -> WalletResult<(bool, bool, bool)> {
         let tx_version_support_jsvalue = inner_value
             .reflect_inner("supportedTransactionVersions")
             .or(Err(WalletError::ExpectedValueNotFound(
@@ -72,12 +75,15 @@ impl SignTransaction {
 
         let mut legacy = false;
         let mut version_zero = false;
+        let mut version_one = false;
 
         tx_version_support.iter().try_for_each(|value| {
             if value == JsValue::from_str("legacy") {
                 legacy = true;
             } else if value == 0 {
                 version_zero = true;
+            } else if value == 1 {
+                version_one = true;
             } else {
                 return Err(WalletError::UnsupportedTransactionVersion);
             }
@@ -89,7 +95,7 @@ impl SignTransaction {
             return Err(WalletError::LegacyTransactionSupportRequired);
         }
 
-        Ok((legacy, version_zero))
+        Ok((legacy, version_zero, version_one))
     }
 
     pub(crate) async fn call_sign_tx(
