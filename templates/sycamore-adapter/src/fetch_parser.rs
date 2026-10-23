@@ -15,7 +15,7 @@ use wallet_adapter::{
 use crate::{AccountState, FetchReq};
 
 pub fn format_timestamp(unix_timestamp: i64) -> String {
-    let timestamp_ms = unix_timestamp as f64 * 1000.0; //Convert seconds to millisconds
+    let timestamp_ms = unix_timestamp as f64 * 1000.0; //Convert seconds to milliseconds
 
     let js_date = Date::new(&JsValue::from_f64(timestamp_ms));
 
