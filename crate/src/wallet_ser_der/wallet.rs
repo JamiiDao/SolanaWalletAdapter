@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use async_channel::Receiver;
-use ed25519_dalek::Signature;
+use solana_signature::Signature;
 use wallet_adapter_common::{
     chains::ChainSupport, clusters::Cluster, signin_standard::SignInOutput, WalletData,
 };

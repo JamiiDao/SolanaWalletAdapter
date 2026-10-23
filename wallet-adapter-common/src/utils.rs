@@ -1,6 +1,7 @@
 use std::{borrow::Cow, time::SystemTime};
 
-use ed25519_dalek::{Signature, Verifier, VerifyingKey};
+use ed25519_dalek::VerifyingKey;
+use solana_signature::Signature;
 
 use crate::{WalletUtilsError, WalletUtilsResult};
 
@@ -40,7 +41,7 @@ impl WalletCommonUtils {
 
     /// Parse a [Signature] from an array of 64 bytes
     pub fn signature(signature_bytes: &[u8; 64]) -> Signature {
-        Signature::from_bytes(signature_bytes)
+        Signature::from(*signature_bytes)
     }
 
     /// Convert a slice of bytes into a 32 byte array. This is useful especially if a [PublicKey](VerifyingKey) is
@@ -65,9 +66,10 @@ impl WalletCommonUtils {
         message: &[u8],
         signature: Signature,
     ) -> WalletUtilsResult<()> {
-        public_key
-            .verify(message, &signature)
-            .or(Err(WalletUtilsError::InvalidSignature))
+        signature
+            .verify(public_key.as_bytes(), message)
+            .then_some(()) // todo: rm once stable https://github.com/rust-lang/rust/issues/142748
+            .ok_or(WalletUtilsError::InvalidSignature)
     }
 
     /// Verify a [message](str) using a [PublicKey](VerifyingKey) and [Signature]
@@ -79,9 +81,10 @@ impl WalletCommonUtils {
         let public_key = Self::public_key(public_key_bytes)?;
         let signature = Self::signature(signature_bytes);
 
-        public_key
-            .verify(message_bytes, &signature)
-            .or(Err(WalletUtilsError::InvalidSignature))
+        signature
+            .verify(public_key.as_bytes(), message_bytes)
+            .then_some(()) // todo: rm once stable https://github.com/rust-lang/rust/issues/142748
+            .ok_or(WalletUtilsError::InvalidSignature)
     }
 
     /// Generate the Base58 address from a [PublicKey](VerifyingKey)
@@ -91,7 +94,7 @@ impl WalletCommonUtils {
 
     /// Generate a Base58 encoded string from a [Signature]
     pub fn base58_signature(signature: Signature) -> String {
-        bs58::encode(signature.to_bytes()).into_string()
+        bs58::encode(signature.as_array()).into_string()
     }
 
     /// Get the shortened string of the `Base58 string` .

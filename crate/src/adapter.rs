@@ -2,7 +2,7 @@ use std::{borrow::Borrow, sync::Arc};
 
 use async_channel::{bounded, Receiver};
 use async_lock::RwLock;
-use ed25519_dalek::Signature;
+use solana_signature::Signature;
 use wallet_adapter_common::{clusters::Cluster, signin_standard::SignInOutput};
 use web_sys::{js_sys::Object, Document, Window};
 
