@@ -3,7 +3,7 @@ members = ["base", "crate", "wallet-adapter-common"]
 resolver = "2"
 
 [workspace.package]
-version = "1.4.2"
+version = "1.5.0"
 authors = ["448-OG <superuser@448.africa>"]
 description = "Solana Wallet Adapter for Rust clients written in pure Rust"
 homepage = "https://github.com/JamiiDao"
